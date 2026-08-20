@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { approveProposal, rejectProposal, addToPool } from "@/app/actions/admin";
+import {
+  approveProposal,
+  rejectProposal,
+  addToPool,
+  moveQueueItem,
+} from "@/app/actions/admin";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -29,12 +34,17 @@ export default async function AdminPage() {
   }
 
   const admin = createAdminClient();
-  const [{ data: pending }, { count: poolCount }] = await Promise.all([
+  const [{ data: pending }, { data: queue }, { count: poolCount }] = await Promise.all([
     admin
       .from("situation_sentences")
       .select("id, content, created_at, profiles(nickname)")
       .eq("status", "pending_review")
       .order("created_at", { ascending: true }),
+    admin
+      .from("situation_sentences")
+      .select("id, content, profiles(nickname)")
+      .eq("status", "queued")
+      .order("queue_position", { ascending: true }),
     admin
       .from("situation_sentences")
       .select("id", { count: "exact", head: true })
@@ -100,6 +110,58 @@ export default async function AdminPage() {
         ) : (
           <p className="text-sm text-black/50 dark:text-white/50">
             승인 대기 중인 제안이 없습니다.
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <p className="text-sm font-semibold">다음 순서 (대기열, {queue?.length ?? 0}개)</p>
+        {queue && queue.length > 0 ? (
+          <ol className="space-y-2">
+            {queue.map((q, i) => {
+              const profileInfo = Array.isArray(q.profiles) ? q.profiles[0] : q.profiles;
+              return (
+                <li
+                  key={q.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-black/10 p-3 dark:border-white/10"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs text-black/50 dark:text-white/50">
+                      {i + 1}순위 · {profileInfo?.nickname ?? "풀"}
+                    </p>
+                    <p className="mt-1 truncate text-sm">{q.content}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <form action={moveQueueItem}>
+                      <input type="hidden" name="id" value={q.id} />
+                      <input type="hidden" name="direction" value="up" />
+                      <button
+                        type="submit"
+                        disabled={i === 0}
+                        className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                      >
+                        위로
+                      </button>
+                    </form>
+                    <form action={moveQueueItem}>
+                      <input type="hidden" name="id" value={q.id} />
+                      <input type="hidden" name="direction" value="down" />
+                      <button
+                        type="submit"
+                        disabled={i === queue.length - 1}
+                        className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                      >
+                        아래로
+                      </button>
+                    </form>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="text-sm text-black/50 dark:text-white/50">
+            대기열이 비어 있습니다.
           </p>
         )}
       </div>

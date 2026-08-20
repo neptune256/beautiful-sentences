@@ -34,15 +34,67 @@ export async function approveProposal(formData: FormData) {
   }
 
   const admin = createAdminClient();
+
+  const { data: last } = await admin
+    .from("situation_sentences")
+    .select("queue_position")
+    .eq("status", "queued")
+    .order("queue_position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { error } = await admin
     .from("situation_sentences")
-    .update({ status: "queued", approved_at: new Date().toISOString() })
+    .update({
+      status: "queued",
+      approved_at: new Date().toISOString(),
+      queue_position: (last?.queue_position ?? 0) + 1,
+    })
     .eq("id", id)
     .eq("status", "pending_review");
 
   if (error) {
     throw new Error(error.message);
   }
+
+  revalidatePath("/admin");
+}
+
+export async function moveQueueItem(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("id");
+  const direction = formData.get("direction");
+  if (typeof id !== "string" || (direction !== "up" && direction !== "down")) {
+    throw new Error("잘못된 요청입니다.");
+  }
+
+  const admin = createAdminClient();
+  const { data: queue } = await admin
+    .from("situation_sentences")
+    .select("id, queue_position")
+    .eq("status", "queued")
+    .order("queue_position", { ascending: true });
+
+  if (!queue) return;
+
+  const index = queue.findIndex((item) => item.id === id);
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapWith < 0 || swapWith >= queue.length) return;
+
+  const current = queue[index];
+  const target = queue[swapWith];
+
+  await Promise.all([
+    admin
+      .from("situation_sentences")
+      .update({ queue_position: target.queue_position })
+      .eq("id", current.id),
+    admin
+      .from("situation_sentences")
+      .update({ queue_position: current.queue_position })
+      .eq("id", target.id),
+  ]);
 
   revalidatePath("/admin");
 }

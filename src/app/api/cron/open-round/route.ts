@@ -24,12 +24,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ skipped: "round already exists for today" });
   }
 
-  // 1순위: 승인된 사용자 제안 대기열 (제출된 순서, 선착순)
+  // 1순위: 승인된 사용자 제안 대기열 (관리자가 조정한 순서, queue_position 기준)
   let { data: next } = await supabase
     .from("situation_sentences")
     .select("id, proposed_by")
     .eq("status", "queued")
-    .order("created_at", { ascending: true })
+    .order("queue_position", { ascending: true })
     .limit(1)
     .maybeSingle();
 
