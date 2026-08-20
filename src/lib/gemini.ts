@@ -10,7 +10,7 @@ export async function evaluateSubmissions(
     throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
   const prompt = buildPrompt(situation, entries);
 
   let lastError: unknown;
