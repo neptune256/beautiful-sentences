@@ -6,6 +6,7 @@ import {
   addToPool,
   moveQueueItem,
   moveToQueue,
+  updateSentenceContent,
 } from "@/app/actions/admin";
 
 export default async function AdminPage() {
@@ -125,38 +126,52 @@ export default async function AdminPage() {
               return (
                 <li
                   key={q.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-black/10 p-3 dark:border-white/10"
+                  className="space-y-2 rounded-lg border border-black/10 p-3 dark:border-white/10"
                 >
-                  <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-black/50 dark:text-white/50">
                       {i + 1}순위 · {profileInfo?.nickname ?? "풀"}
                     </p>
-                    <p className="mt-1 truncate text-sm">{q.content}</p>
+                    <div className="flex shrink-0 gap-1">
+                      <form action={moveQueueItem}>
+                        <input type="hidden" name="id" value={q.id} />
+                        <input type="hidden" name="direction" value="up" />
+                        <button
+                          type="submit"
+                          disabled={i === 0}
+                          className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                        >
+                          위로
+                        </button>
+                      </form>
+                      <form action={moveQueueItem}>
+                        <input type="hidden" name="id" value={q.id} />
+                        <input type="hidden" name="direction" value="down" />
+                        <button
+                          type="submit"
+                          disabled={i === queue.length - 1}
+                          className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                        >
+                          아래로
+                        </button>
+                      </form>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 gap-1">
-                    <form action={moveQueueItem}>
-                      <input type="hidden" name="id" value={q.id} />
-                      <input type="hidden" name="direction" value="up" />
-                      <button
-                        type="submit"
-                        disabled={i === 0}
-                        className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
-                      >
-                        위로
-                      </button>
-                    </form>
-                    <form action={moveQueueItem}>
-                      <input type="hidden" name="id" value={q.id} />
-                      <input type="hidden" name="direction" value="down" />
-                      <button
-                        type="submit"
-                        disabled={i === queue.length - 1}
-                        className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
-                      >
-                        아래로
-                      </button>
-                    </form>
-                  </div>
+                  <form action={updateSentenceContent} className="flex gap-2">
+                    <input type="hidden" name="id" value={q.id} />
+                    <input
+                      type="text"
+                      name="content"
+                      defaultValue={q.content}
+                      className="flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
+                    />
+                    <button
+                      type="submit"
+                      className="shrink-0 rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
+                    >
+                      저장
+                    </button>
+                  </form>
                 </li>
               );
             })}
@@ -177,21 +192,35 @@ export default async function AdminPage() {
             {pool.map((p, i) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-black/10 p-3 text-sm dark:border-white/10"
+                className="space-y-2 rounded-lg border border-black/10 p-3 text-sm dark:border-white/10"
               >
-                <p className="min-w-0 truncate">
-                  <span className="mr-2 text-xs text-black/40 dark:text-white/40">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-black/40 dark:text-white/40">
                     {i + 1}.
                   </span>
-                  {p.content}
-                </p>
-                <form action={moveToQueue} className="shrink-0">
+                  <form action={moveToQueue} className="shrink-0">
+                    <input type="hidden" name="id" value={p.id} />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-black/10 px-2 py-1 text-xs dark:border-white/10"
+                    >
+                      대기열로 이동
+                    </button>
+                  </form>
+                </div>
+                <form action={updateSentenceContent} className="flex gap-2">
                   <input type="hidden" name="id" value={p.id} />
+                  <input
+                    type="text"
+                    name="content"
+                    defaultValue={p.content}
+                    className="flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
+                  />
                   <button
                     type="submit"
-                    className="rounded-full border border-black/10 px-2 py-1 text-xs dark:border-white/10"
+                    className="shrink-0 rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
                   >
-                    대기열로 이동
+                    저장
                   </button>
                 </form>
               </li>

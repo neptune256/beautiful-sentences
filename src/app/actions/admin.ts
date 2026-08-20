@@ -150,6 +150,33 @@ export async function rejectProposal(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function updateSentenceContent(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("id");
+  const content = formData.get("content");
+  if (
+    typeof id !== "string" ||
+    typeof content !== "string" ||
+    content.trim().length === 0
+  ) {
+    throw new Error("잘못된 요청입니다.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("situation_sentences")
+    .update({ content: content.trim() })
+    .eq("id", id)
+    .in("status", ["queued", "pool"]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+}
+
 export async function addToPool(formData: FormData) {
   await requireAdmin();
 
