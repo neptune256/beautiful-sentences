@@ -25,6 +25,18 @@ async function requireAdmin() {
   }
 }
 
+async function nextQueuePosition(admin: ReturnType<typeof createAdminClient>) {
+  const { data: last } = await admin
+    .from("situation_sentences")
+    .select("queue_position")
+    .eq("status", "queued")
+    .order("queue_position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return (last?.queue_position ?? 0) + 1;
+}
+
 export async function approveProposal(formData: FormData) {
   await requireAdmin();
 
@@ -34,24 +46,41 @@ export async function approveProposal(formData: FormData) {
   }
 
   const admin = createAdminClient();
-
-  const { data: last } = await admin
-    .from("situation_sentences")
-    .select("queue_position")
-    .eq("status", "queued")
-    .order("queue_position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   const { error } = await admin
     .from("situation_sentences")
     .update({
       status: "queued",
       approved_at: new Date().toISOString(),
-      queue_position: (last?.queue_position ?? 0) + 1,
+      queue_position: await nextQueuePosition(admin),
     })
     .eq("id", id)
     .eq("status", "pending_review");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function moveToQueue(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("id");
+  if (typeof id !== "string") {
+    throw new Error("잘못된 요청입니다.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("situation_sentences")
+    .update({
+      status: "queued",
+      approved_at: new Date().toISOString(),
+      queue_position: await nextQueuePosition(admin),
+    })
+    .eq("id", id)
+    .eq("status", "pool");
 
   if (error) {
     throw new Error(error.message);

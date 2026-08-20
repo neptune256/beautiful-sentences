@@ -5,6 +5,7 @@ import {
   rejectProposal,
   addToPool,
   moveQueueItem,
+  moveToQueue,
 } from "@/app/actions/admin";
 
 export default async function AdminPage() {
@@ -176,12 +177,23 @@ export default async function AdminPage() {
             {pool.map((p, i) => (
               <li
                 key={p.id}
-                className="rounded-lg border border-black/10 p-3 text-sm dark:border-white/10"
+                className="flex items-center justify-between gap-3 rounded-lg border border-black/10 p-3 text-sm dark:border-white/10"
               >
-                <span className="mr-2 text-xs text-black/40 dark:text-white/40">
-                  {i + 1}.
-                </span>
-                {p.content}
+                <p className="min-w-0 truncate">
+                  <span className="mr-2 text-xs text-black/40 dark:text-white/40">
+                    {i + 1}.
+                  </span>
+                  {p.content}
+                </p>
+                <form action={moveToQueue} className="shrink-0">
+                  <input type="hidden" name="id" value={p.id} />
+                  <button
+                    type="submit"
+                    className="rounded-full border border-black/10 px-2 py-1 text-xs dark:border-white/10"
+                  >
+                    대기열로 이동
+                  </button>
+                </form>
               </li>
             ))}
           </ol>
