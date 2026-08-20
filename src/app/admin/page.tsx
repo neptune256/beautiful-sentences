@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { approveProposal, rejectProposal, addToPool } from "@/app/actions/admin";
 
 export default async function AdminPage() {
@@ -27,13 +28,14 @@ export default async function AdminPage() {
     );
   }
 
+  const admin = createAdminClient();
   const [{ data: pending }, { count: poolCount }] = await Promise.all([
-    supabase
+    admin
       .from("situation_sentences")
       .select("id, content, created_at, profiles(nickname)")
       .eq("status", "pending_review")
       .order("created_at", { ascending: true }),
-    supabase
+    admin
       .from("situation_sentences")
       .select("id", { count: "exact", head: true })
       .eq("status", "pool"),
