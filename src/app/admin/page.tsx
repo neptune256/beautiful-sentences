@@ -34,7 +34,7 @@ export default async function AdminPage() {
   }
 
   const admin = createAdminClient();
-  const [{ data: pending }, { data: queue }, { count: poolCount }] = await Promise.all([
+  const [{ data: pending }, { data: queue }, { data: pool }] = await Promise.all([
     admin
       .from("situation_sentences")
       .select("id, content, created_at, profiles(nickname)")
@@ -47,8 +47,9 @@ export default async function AdminPage() {
       .order("queue_position", { ascending: true }),
     admin
       .from("situation_sentences")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pool"),
+      .select("id, content, created_at")
+      .eq("status", "pool")
+      .order("created_at", { ascending: true }),
   ]);
 
   return (
@@ -64,7 +65,7 @@ export default async function AdminPage() {
         <div className="flex items-baseline justify-between">
           <p className="text-sm font-semibold">제안 승인 대기 ({pending?.length ?? 0})</p>
           <p className="text-sm text-black/50 dark:text-white/50">
-            남은 풀 문장: {poolCount ?? 0}개
+            남은 풀 문장: {pool?.length ?? 0}개
           </p>
         </div>
 
@@ -162,6 +163,31 @@ export default async function AdminPage() {
         ) : (
           <p className="text-sm text-black/50 dark:text-white/50">
             대기열이 비어 있습니다.
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <p className="text-sm font-semibold">
+          사전 제작 풀 ({pool?.length ?? 0}개) — 대기열이 비면 이 순서대로 사용돼요
+        </p>
+        {pool && pool.length > 0 ? (
+          <ol className="space-y-2">
+            {pool.map((p, i) => (
+              <li
+                key={p.id}
+                className="rounded-lg border border-black/10 p-3 text-sm dark:border-white/10"
+              >
+                <span className="mr-2 text-xs text-black/40 dark:text-white/40">
+                  {i + 1}.
+                </span>
+                {p.content}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-sm text-black/50 dark:text-white/50">
+            풀에 등록된 문장이 없습니다.
           </p>
         )}
       </div>
