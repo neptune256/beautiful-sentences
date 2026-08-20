@@ -1,34 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+type Props = {
+  onClose: () => void;
+  onCloseForToday: () => void;
+};
 
-const STORAGE_KEY = "intro_dismissed_date";
-
-function todayKst() {
-  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
-}
-
-export function IntroModal() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const dismissedDate = localStorage.getItem(STORAGE_KEY);
-    if (dismissedDate !== todayKst()) {
-      setOpen(true);
-    }
-  }, []);
-
-  function close() {
-    setOpen(false);
-  }
-
-  function closeForToday() {
-    localStorage.setItem(STORAGE_KEY, todayKst());
-    setOpen(false);
-  }
-
-  if (!open) return null;
-
+export function IntroModal({ onClose, onCloseForToday }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg border border-black/10 bg-white p-6 dark:border-white/10 dark:bg-black">
@@ -58,10 +35,10 @@ export function IntroModal() {
           <section>
             <p className="font-medium">3. 평가는 어떻게 되나요</p>
             <p className="mt-1 text-black/60 dark:text-white/60">
-              마감 직후 AI(Gemini)가 그날 제출된 모든 글을 문장력·상황
-              충실도·창의성 기준으로 비교 평가해서 1위를 선정하고, 선정
-              이유를 함께 남겨요. 결과는 다음 날 &apos;어제의 결과&apos;
-              페이지에서 확인할 수 있어요.
+              마감 직후 AI(Gemini)가 그날 제출된 모든 글을 비교 평가해서 1위를
+              선정하고, 선정 이유를 함께 남겨요. 결과는 다음 날
+              &apos;어제의 결과&apos; 페이지에서 확인할 수 있어요. 자세한
+              평가 기준은 잠시 후 안내에서 확인해 주세요.
             </p>
           </section>
 
@@ -85,13 +62,13 @@ export function IntroModal() {
 
         <div className="mt-6 flex items-center justify-end gap-3">
           <button
-            onClick={closeForToday}
+            onClick={onCloseForToday}
             className="text-sm text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
           >
             오늘 하루 보지 않기
           </button>
           <button
-            onClick={close}
+            onClick={onClose}
             className="rounded-full bg-black px-4 py-1.5 text-sm text-white dark:bg-white dark:text-black"
           >
             확인
