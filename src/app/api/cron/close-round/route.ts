@@ -74,13 +74,27 @@ async function closeRound(
   let evaluated = false;
   try {
     const entries = submissions.map((s, i) => ({ index: i + 1, content: s.content }));
-    const { winnerIndex, reasoning } = await evaluateSubmissions(
+    const { winnerIndex, reasoning, results } = await evaluateSubmissions(
       situationContent ?? "",
       entries,
     );
     const winner = submissions[winnerIndex - 1];
 
     if (winner) {
+      await Promise.all(
+        results.map((r) =>
+          supabase
+            .from("submissions")
+            .update({
+              eval_passed_gate: r.passedGate,
+              eval_gate_issue: r.gateIssue,
+              eval_scores: r.scores,
+              eval_note: r.note,
+            })
+            .eq("id", submissions[r.index - 1].id),
+        ),
+      );
+
       await supabase.from("evaluations").insert({
         daily_round_id: round.id,
         winner_submission_id: winner.id,

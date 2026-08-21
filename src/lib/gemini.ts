@@ -1,5 +1,26 @@
 type Entry = { index: number; content: string };
-type EvaluationResult = { winnerIndex: number; reasoning: string };
+
+type CriterionScores = {
+  imagery: number;
+  rhythm: number;
+  resonance: number;
+  density: number;
+  context: number;
+};
+
+type EntryResult = {
+  index: number;
+  passedGate: boolean;
+  gateIssue: string | null;
+  scores: CriterionScores;
+  note: string;
+};
+
+type EvaluationResult = {
+  winnerIndex: number;
+  reasoning: string;
+  results: EntryResult[];
+};
 
 export async function evaluateSubmissions(
   situation: string,
@@ -23,6 +44,30 @@ export async function evaluateSubmissions(
   }
 
   throw lastError instanceof Error ? lastError : new Error("Gemini 평가에 실패했습니다.");
+}
+
+function isCriterionScores(value: unknown): value is CriterionScores {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.imagery === "number" &&
+    typeof v.rhythm === "number" &&
+    typeof v.resonance === "number" &&
+    typeof v.density === "number" &&
+    typeof v.context === "number"
+  );
+}
+
+function isEntryResult(value: unknown): value is EntryResult {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.index === "number" &&
+    typeof v.passed_gate === "boolean" &&
+    (v.gate_issue === null || typeof v.gate_issue === "string") &&
+    isCriterionScores(v.scores) &&
+    typeof v.note === "string"
+  );
 }
 
 async function callGemini(
@@ -55,12 +100,30 @@ async function callGemini(
   const parsed = JSON.parse(text);
   if (
     typeof parsed.winner_index !== "number" ||
-    typeof parsed.reasoning !== "string"
+    typeof parsed.reasoning !== "string" ||
+    !Array.isArray(parsed.results) ||
+    !parsed.results.every(isEntryResult)
   ) {
     throw new Error("Gemini 응답 형식이 올바르지 않습니다.");
   }
 
-  return { winnerIndex: parsed.winner_index, reasoning: parsed.reasoning };
+  const results: EntryResult[] = parsed.results.map(
+    (r: {
+      index: number;
+      passed_gate: boolean;
+      gate_issue: string | null;
+      scores: CriterionScores;
+      note: string;
+    }) => ({
+      index: r.index,
+      passedGate: r.passed_gate,
+      gateIssue: r.gate_issue,
+      scores: r.scores,
+      note: r.note,
+    }),
+  );
+
+  return { winnerIndex: parsed.winner_index, reasoning: parsed.reasoning, results };
 }
 
 function buildPrompt(situation: string, entries: Entry[]) {
@@ -81,20 +144,29 @@ function buildPrompt(situation: string, entries: Entry[]) {
     "   (예: 원문이 극심한 공포를 묘사하는 건조한 문장인데, 다시 쓴 문장이 지나치게 아름답고 낭만적으로 바뀌어",
     "   공포감이 사라졌다면 서사적 기능을 잃은 것으로 실패입니다.)",
     "",
-    "## 2단계: 세부 평가 기준 (1단계를 통과한 글에 한해 적용)",
-    "1. 이미지의 선명도: 추상적 서술 대신 감각적 묘사로 독자 머릿속에 생생한 그림을 그려내는가?",
-    "2. 리듬과 운율: 조사·어미 활용이 매끄럽고, 문장의 호흡(단문/장문의 조화)이 감정선과 일치하는가?",
-    "3. 정서적 잔향: 감정을 직접 설명하지 않고도 문장이 끝난 뒤 여운과 정서를 남기는가?",
-    "4. 함축성과 참신함: 상투적 클리셰를 피하고, 짧은 문장 안에 깊은 의미와 신선한 은유를 담았는가?",
-    "5. 맥락적 부합성: 문체가 화려하더라도 소설 전체의 톤앤매너·인물의 성격과 어울리며 과시적이거나 감정 과잉이 아닌가?",
+    "## 2단계: 세부 평가 기준 (모든 글에 채점, 각 1~10점)",
+    "1. imagery (이미지의 선명도): 추상적 서술 대신 감각적 묘사로 독자 머릿속에 생생한 그림을 그려내는가?",
+    "2. rhythm (리듬과 운율): 조사·어미 활용이 매끄럽고, 문장의 호흡(단문/장문의 조화)이 감정선과 일치하는가?",
+    "3. resonance (정서적 잔향): 감정을 직접 설명하지 않고도 문장이 끝난 뒤 여운과 정서를 남기는가?",
+    "4. density (함축성과 참신함): 상투적 클리셰를 피하고, 짧은 문장 안에 깊은 의미와 신선한 은유를 담았는가?",
+    "5. context (맥락적 부합성): 문체가 화려하더라도 소설 전체의 톤앤매너·인물의 성격과 어울리며 과시적이거나 감정 과잉이 아닌가?",
     "",
     `상황 문장: ${situation}`,
     "",
     "참가자 글 (번호로만 구분, 익명):",
     list,
     "",
-    "1단계를 통과한 글 중에서 2단계 기준으로 가장 뛰어난 글 1개를 선정하세요.",
-    "(전원이 1단계를 통과하지 못했다면, 원문의 상황과 기능을 가장 덜 훼손한 글을 선정하세요.)",
-    '다음 JSON 형식으로만 응답하세요: {"winner_index": <선정된 글의 번호>, "reasoning": "<선정 이유. 1단계를 어떻게 통과했는지와 2단계 기준 중 특히 뛰어났던 점을 포함해 한국어로 4~6문장>"}',
+    "채점 절차:",
+    "- 모든 글에 대해 1단계 통과 여부(passed_gate)와, 탈락했다면 어떤 기준을 왜 위반했는지 한 문장(gate_issue)을 남기세요.",
+    "- 1단계 탈락 여부와 무관하게, 모든 글에 2단계 5개 기준 점수(각 1~10점)를 매기세요. 비교를 위해 탈락작도 채점합니다.",
+    "- note는 '가장 큰 문제점 하나'만 한 문장으로 담백하게 쓰세요. 장점이나 칭찬은 note에 넣지 마세요.",
+    "- 1단계를 통과한 글 중 2단계 점수 총합이 가장 높은 글을 winner_index로 선정하세요.",
+    "  (전원이 1단계를 통과하지 못했다면, 원문의 상황과 기능을 가장 덜 훼손한 글을 선정하세요.)",
+    "- winner_index로 선정된 글의 note는 빈 문자열로 두고, 대신 reasoning에 왜 1위인지 4~6문장으로 설명하세요",
+    "  (1단계를 어떻게 통과했는지와 2단계 기준 중 특히 뛰어났던 점 포함).",
+    "",
+    "다음 JSON 형식으로만 응답하세요:",
+    '{"results": [{"index": <번호>, "passed_gate": <boolean>, "gate_issue": <string 또는 null>, "scores": {"imagery": <1~10>, "rhythm": <1~10>, "resonance": <1~10>, "density": <1~10>, "context": <1~10>}, "note": "<1위가 아니라면 가장 큰 문제점 한 문장, 1위라면 빈 문자열>"}, ...],',
+    ' "winner_index": <선정된 글의 번호>, "reasoning": "<1위 선정 이유, 한국어로 4~6문장>"}',
   ].join("\n");
 }

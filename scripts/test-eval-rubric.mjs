@@ -87,21 +87,30 @@ function buildPrompt(situation, entries) {
     "   (예: 원문이 극심한 공포를 묘사하는 건조한 문장인데, 다시 쓴 문장이 지나치게 아름답고 낭만적으로 바뀌어",
     "   공포감이 사라졌다면 서사적 기능을 잃은 것으로 실패입니다.)",
     "",
-    "## 2단계: 세부 평가 기준 (1단계를 통과한 글에 한해 적용)",
-    "1. 이미지의 선명도: 추상적 서술 대신 감각적 묘사로 독자 머릿속에 생생한 그림을 그려내는가?",
-    "2. 리듬과 운율: 조사·어미 활용이 매끄럽고, 문장의 호흡(단문/장문의 조화)이 감정선과 일치하는가?",
-    "3. 정서적 잔향: 감정을 직접 설명하지 않고도 문장이 끝난 뒤 여운과 정서를 남기는가?",
-    "4. 함축성과 참신함: 상투적 클리셰를 피하고, 짧은 문장 안에 깊은 의미와 신선한 은유를 담았는가?",
-    "5. 맥락적 부합성: 문체가 화려하더라도 소설 전체의 톤앤매너·인물의 성격과 어울리며 과시적이거나 감정 과잉이 아닌가?",
+    "## 2단계: 세부 평가 기준 (모든 글에 채점, 각 1~10점)",
+    "1. imagery (이미지의 선명도): 추상적 서술 대신 감각적 묘사로 독자 머릿속에 생생한 그림을 그려내는가?",
+    "2. rhythm (리듬과 운율): 조사·어미 활용이 매끄럽고, 문장의 호흡(단문/장문의 조화)이 감정선과 일치하는가?",
+    "3. resonance (정서적 잔향): 감정을 직접 설명하지 않고도 문장이 끝난 뒤 여운과 정서를 남기는가?",
+    "4. density (함축성과 참신함): 상투적 클리셰를 피하고, 짧은 문장 안에 깊은 의미와 신선한 은유를 담았는가?",
+    "5. context (맥락적 부합성): 문체가 화려하더라도 소설 전체의 톤앤매너·인물의 성격과 어울리며 과시적이거나 감정 과잉이 아닌가?",
     "",
     `상황 문장: ${situation}`,
     "",
     "참가자 글 (번호로만 구분, 익명):",
     list,
     "",
-    "1단계를 통과한 글 중에서 2단계 기준으로 가장 뛰어난 글 1개를 선정하세요.",
-    "(전원이 1단계를 통과하지 못했다면, 원문의 상황과 기능을 가장 덜 훼손한 글을 선정하세요.)",
-    '다음 JSON 형식으로만 응답하세요: {"winner_index": <선정된 글의 번호>, "reasoning": "<선정 이유. 1단계를 어떻게 통과했는지와 2단계 기준 중 특히 뛰어났던 점을 포함해 한국어로 4~6문장>"}',
+    "채점 절차:",
+    "- 모든 글에 대해 1단계 통과 여부(passed_gate)와, 탈락했다면 어떤 기준을 왜 위반했는지 한 문장(gate_issue)을 남기세요.",
+    "- 1단계 탈락 여부와 무관하게, 모든 글에 2단계 5개 기준 점수(각 1~10점)를 매기세요. 비교를 위해 탈락작도 채점합니다.",
+    "- note는 '가장 큰 문제점 하나'만 한 문장으로 담백하게 쓰세요. 장점이나 칭찬은 note에 넣지 마세요.",
+    "- 1단계를 통과한 글 중 2단계 점수 총합이 가장 높은 글을 winner_index로 선정하세요.",
+    "  (전원이 1단계를 통과하지 못했다면, 원문의 상황과 기능을 가장 덜 훼손한 글을 선정하세요.)",
+    "- winner_index로 선정된 글의 note는 빈 문자열로 두고, 대신 reasoning에 왜 1위인지 4~6문장으로 설명하세요",
+    "  (1단계를 어떻게 통과했는지와 2단계 기준 중 특히 뛰어났던 점 포함).",
+    "",
+    "다음 JSON 형식으로만 응답하세요:",
+    '{"results": [{"index": <번호>, "passed_gate": <boolean>, "gate_issue": <string 또는 null>, "scores": {"imagery": <1~10>, "rhythm": <1~10>, "resonance": <1~10>, "density": <1~10>, "context": <1~10>}, "note": "<1위가 아니라면 가장 큰 문제점 한 문장, 1위라면 빈 문자열>"}, ...],',
+    ' "winner_index": <선정된 글의 번호>, "reasoning": "<1위 선정 이유, 한국어로 4~6문장>"}',
   ].join("\n");
 }
 
@@ -121,7 +130,12 @@ async function callGemini(prompt) {
   if (!res.ok) throw new Error(`Gemini error ${res.status}: ${JSON.stringify(data)}`);
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   const parsed = JSON.parse(text);
-  return { winnerIndex: parsed.winner_index, reasoning: parsed.reasoning, raw: data };
+  return {
+    winnerIndex: parsed.winner_index,
+    reasoning: parsed.reasoning,
+    results: parsed.results,
+    raw: data,
+  };
 }
 
 // 새 2단계 기준(정보/상황 등가성, 서사적 기능 유지, 이미지의 선명도, 리듬과 운율,
@@ -202,12 +216,31 @@ async function main() {
   console.log("6. Gemini 평가 호출...");
   const entries = submissions.map((s, i) => ({ index: i + 1, content: s.content }));
   const prompt = buildPrompt(SITUATION, entries);
-  const { winnerIndex, reasoning, raw } = await callGemini(prompt);
+  const { winnerIndex, reasoning, results, raw } = await callGemini(prompt);
   console.log("   -> winner_index:", winnerIndex);
   console.log("   -> reasoning:", reasoning);
+  for (const r of results) {
+    console.log(
+      `   -> [${r.index}] passed=${r.passed_gate} scores=${JSON.stringify(r.scores)} note=${r.note || r.gate_issue || "-"}`,
+    );
+  }
 
   const winnerSub = submissions[winnerIndex - 1];
   if (!winnerSub) throw new Error("winner_index가 범위를 벗어남: " + winnerIndex);
+
+  console.log("6b. 제출별 채점 결과 저장...");
+  for (const r of results) {
+    await restJson(`submissions?id=eq.${submissions[r.index - 1].id}`, {
+      method: "PATCH",
+      prefer: "return=minimal",
+      body: JSON.stringify({
+        eval_passed_gate: r.passed_gate,
+        eval_gate_issue: r.gate_issue,
+        eval_scores: r.scores,
+        eval_note: r.note,
+      }),
+    });
+  }
 
   console.log("7. evaluations 기록...");
   await restJson("evaluations", {

@@ -1,5 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 
+type CriterionScores = {
+  imagery: number;
+  rhythm: number;
+  resonance: number;
+  density: number;
+  context: number;
+};
+
+const CRITERION_LABELS: Record<keyof CriterionScores, string> = {
+  imagery: "선명도",
+  rhythm: "운율",
+  resonance: "잔향",
+  density: "함축성",
+  context: "맥락",
+};
+
+function totalScore(scores: CriterionScores) {
+  return Object.values(scores).reduce((sum, v) => sum + v, 0);
+}
+
 export default async function YesterdayPage() {
   const supabase = await createClient();
 
@@ -34,7 +54,9 @@ export default async function YesterdayPage() {
   const [{ data: submissions }, { data: evaluation }] = await Promise.all([
     supabase
       .from("submissions")
-      .select("id, content, profiles(nickname)")
+      .select(
+        "id, content, profiles(nickname), eval_scores, eval_note, eval_passed_gate, eval_gate_issue",
+      )
       .eq("daily_round_id", round.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -72,6 +94,7 @@ export default async function YesterdayPage() {
           {submissions?.map((s) => {
             const isWinner = s.id === evaluation?.winner_submission_id;
             const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+            const scores = s.eval_scores as CriterionScores | null;
 
             return (
               <li
@@ -88,11 +111,37 @@ export default async function YesterdayPage() {
                       1위
                     </span>
                   )}
+                  {s.eval_passed_gate === false && (
+                    <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
+                      1단계 기준 미통과
+                    </span>
+                  )}
                   <span className="font-medium">{profile?.nickname ?? "익명"}</span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-black/80 dark:text-white/80">
                   {s.content}
                 </p>
+
+                {scores && (
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-black/50 dark:text-white/50">
+                    {(Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[]).map(
+                      (key) => (
+                        <span key={key}>
+                          {CRITERION_LABELS[key]} {scores[key]}
+                        </span>
+                      ),
+                    )}
+                    <span className="font-medium text-black/70 dark:text-white/70">
+                      총점 {totalScore(scores)}/50
+                    </span>
+                  </div>
+                )}
+
+                {!isWinner && (s.eval_gate_issue || s.eval_note) && (
+                  <p className="mt-2 text-xs text-black/50 dark:text-white/50">
+                    아쉬운 점: {s.eval_gate_issue || s.eval_note}
+                  </p>
+                )}
               </li>
             );
           })}
