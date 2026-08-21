@@ -1,7 +1,26 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import confetti from "canvas-confetti";
 import { saveSubmission } from "@/app/actions/submissions";
+import { SubmissionSuccessModal } from "@/components/submission-success-modal";
+
+// 은은한 골드·브라운 톤 별가루가 화면 양쪽에서 부드럽게 퍼지는 정도로만 터뜨린다.
+function fireSuccessConfetti() {
+  const shared: confetti.Options = {
+    particleCount: 45,
+    spread: 65,
+    startVelocity: 22,
+    gravity: 0.55,
+    scalar: 0.7,
+    ticks: 220,
+    shapes: ["circle"],
+    colors: ["#EAB308", "#D4A017", "#8B6914", "#C9A063"],
+  };
+
+  confetti({ ...shared, angle: 60, origin: { x: 0.15, y: 0.7 } });
+  confetti({ ...shared, angle: 120, origin: { x: 0.85, y: 0.7 } });
+}
 
 export function SubmissionForm({
   dailyRoundId,
@@ -14,6 +33,7 @@ export function SubmissionForm({
   const [isPending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   function handleSave() {
     setError(null);
@@ -21,6 +41,8 @@ export function SubmissionForm({
       try {
         await saveSubmission(dailyRoundId, content);
         setSavedAt(new Date().toLocaleTimeString("ko-KR"));
+        fireSuccessConfetti();
+        setShowSuccess(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : "저장에 실패했습니다.");
       }
@@ -51,6 +73,12 @@ export function SubmissionForm({
         )}
         {error && <span className="text-xs text-red-500">{error}</span>}
       </div>
+
+      <SubmissionSuccessModal
+        open={showSuccess}
+        content={content}
+        onClose={() => setShowSuccess(false)}
+      />
     </div>
   );
 }
