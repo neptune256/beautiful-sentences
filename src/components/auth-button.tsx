@@ -14,6 +14,13 @@ export function AuthButton({ nickname }: { nickname: string | null }) {
     });
   }
 
+  async function signInWithKakao() {
+    await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     router.refresh();
@@ -34,11 +41,19 @@ export function AuthButton({ nickname }: { nickname: string | null }) {
   }
 
   return (
-    <button
-      onClick={signInWithGoogle}
-      className="rounded-full border border-black/10 px-4 py-1.5 text-sm hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
-    >
-      구글로 로그인
-    </button>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={signInWithGoogle}
+        className="rounded-full border border-black/10 px-4 py-1.5 text-sm hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+      >
+        구글로 로그인
+      </button>
+      <button
+        onClick={signInWithKakao}
+        className="rounded-full bg-[#FEE500] px-4 py-1.5 text-sm text-black/85 hover:brightness-95"
+      >
+        카카오로 로그인
+      </button>
+    </div>
   );
 }
