@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AuthButton } from "@/components/auth-button";
+import { NicknameSetupModal } from "@/components/nickname-setup-modal";
 
 const links = [
   { href: "/", label: "오늘의 문장" },
@@ -16,17 +17,22 @@ export async function Nav() {
   } = await supabase.auth.getUser();
 
   let nickname: string | null = null;
+  let needsNicknameSetup = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("nickname")
+      .select("nickname, nickname_set")
       .eq("id", user.id)
       .single();
     nickname = profile?.nickname ?? null;
+    needsNicknameSetup = profile?.nickname_set === false;
   }
 
   return (
     <header className="border-b border-black/10 dark:border-white/10">
+      {needsNicknameSetup && nickname && (
+        <NicknameSetupModal defaultNickname={nickname} />
+      )}
       <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
         <Link href="/" className="font-semibold tracking-tight">
           아름다운 문장
@@ -40,6 +46,13 @@ export async function Nav() {
                 </Link>
               </li>
             ))}
+            {user && (
+              <li>
+                <Link href="/mypage" className="hover:text-black dark:hover:text-white">
+                  마이페이지
+                </Link>
+              </li>
+            )}
           </ul>
           <AuthButton nickname={nickname} />
         </div>
