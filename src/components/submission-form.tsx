@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { saveSubmission } from "@/app/actions/submissions";
 import { SubmissionSuccessModal } from "@/components/submission-success-modal";
-import { ManuscriptInput } from "@/components/manuscript";
 
 // 은은한 골드·브라운 톤 별가루가 화면 양쪽에서 부드럽게 퍼지는 정도로만 터뜨린다.
 function fireSuccessConfetti() {
@@ -35,6 +34,17 @@ export function SubmissionForm({
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 노트 페이지처럼 글이 길어질수록 입력창도 아래로 늘어나게 함 (스크롤에 갇히지 않도록)
+  function autoResize(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  useEffect(() => {
+    if (textareaRef.current) autoResize(textareaRef.current);
+  }, []);
 
   function handleSave() {
     setError(null);
@@ -55,17 +65,19 @@ export function SubmissionForm({
       <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
         나의 문장
       </span>
-      <div className="overflow-x-auto pb-1">
-        <ManuscriptInput
-          value={content}
-          onChange={setContent}
-          columns={12}
-          rows={6}
-          maxLength={2000}
-          ariaLabel="나의 문장 입력"
-          placeholder="이 상황을 나만의 문체로 다시 써보세요."
-        />
-      </div>
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => {
+          setContent(e.target.value);
+          autoResize(e.target);
+        }}
+        maxLength={2000}
+        rows={6}
+        aria-label="나의 문장 입력"
+        placeholder="이 상황을 나만의 문체로 다시 써보세요."
+        className="w-full resize-none rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)]"
+      />
       <div className="flex items-center gap-4">
         <span className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
           {Array.from(content).length}자
