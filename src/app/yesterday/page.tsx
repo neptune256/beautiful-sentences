@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+
+const PAGE_SIZE = 5;
 
 type CriterionScores = {
   imagery: number;
@@ -20,8 +23,10 @@ function totalScore(scores: CriterionScores) {
   return Object.values(scores).reduce((sum, v) => sum + v, 0);
 }
 
-export default async function YesterdayPage() {
+export default async function YesterdayPage(props: PageProps<"/yesterday">) {
   const supabase = await createClient();
+  const { page: pageParam } = await props.searchParams;
+  const requestedPage = Math.max(1, parseInt(Array.isArray(pageParam) ? pageParam[0] : pageParam ?? "1", 10) || 1);
 
   const { data: round } = await supabase
     .from("daily_rounds")
@@ -53,20 +58,31 @@ export default async function YesterdayPage() {
     ? round.situation_sentences[0]
     : round.situation_sentences;
 
-  const [{ data: submissions }, { data: evaluation }] = await Promise.all([
+  const [{ count: submissionCount }, { data: evaluation }] = await Promise.all([
     supabase
       .from("submissions")
-      .select(
-        "id, content, profiles(nickname), eval_scores, eval_note, eval_passed_gate, eval_gate_issue",
-      )
-      .eq("daily_round_id", round.id)
-      .order("created_at", { ascending: true }),
+      .select("id", { count: "exact", head: true })
+      .eq("daily_round_id", round.id),
     supabase
       .from("evaluations")
       .select("reasoning, winner_submission_id")
       .eq("daily_round_id", round.id)
       .maybeSingle(),
   ]);
+
+  const totalPages = Math.max(1, Math.ceil((submissionCount ?? 0) / PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const { data: submissions } = await supabase
+    .from("submissions")
+    .select(
+      "id, content, profiles(nickname), eval_scores, eval_note, eval_passed_gate, eval_gate_issue",
+    )
+    .eq("daily_round_id", round.id)
+    .order("created_at", { ascending: true })
+    .range(from, to);
 
   return (
     <div className="flex flex-col gap-8">
@@ -95,7 +111,7 @@ export default async function YesterdayPage() {
 
       <section className="flex flex-col gap-3">
         <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-          참가자들의 글 ({submissions?.length ?? 0})
+          참가자들의 글 ({submissionCount ?? 0})
         </span>
         <ul className="flex flex-col gap-4">
           {submissions?.map((s) => {
@@ -153,6 +169,37 @@ export default async function YesterdayPage() {
             );
           })}
         </ul>
+
+        {totalPages > 1 && (
+          <nav
+            aria-label="페이지 넘기기"
+            className="mt-2 flex items-center justify-center gap-6 font-sans text-sm font-bold"
+          >
+            {page > 1 ? (
+              <Link
+                href={`/yesterday?page=${page - 1}`}
+                className="text-[var(--stamp-red)] transition-transform hover:scale-105"
+              >
+                ◂ 이전 장
+              </Link>
+            ) : (
+              <span className="text-[color-mix(in_srgb,var(--ink)_30%,transparent)]">◂ 이전 장</span>
+            )}
+            <span className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+              {page} / {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Link
+                href={`/yesterday?page=${page + 1}`}
+                className="text-[var(--stamp-red)] transition-transform hover:scale-105"
+              >
+                다음 장 ▸
+              </Link>
+            ) : (
+              <span className="text-[color-mix(in_srgb,var(--ink)_30%,transparent)]">다음 장 ▸</span>
+            )}
+          </nav>
+        )}
       </section>
     </div>
   );
