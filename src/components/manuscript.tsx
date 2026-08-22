@@ -43,7 +43,11 @@ export function ManuscriptDisplay({
   );
 }
 
-/** 입력용 원고지: 격자 배경 위에 textarea를 겹쳐 한 칸에 한 글자씩 정렬 */
+/**
+ * 입력용 원고지: 실제 글자는 ManuscriptDisplay와 동일한 방식(칸마다 flex 중앙정렬)으로 그리고,
+ * 타이핑은 그 위에 겹친 투명 textarea가 받는다. (letter-spacing으로 칸을 흉내 내던 예전 방식은
+ * 마침표·띄어쓰기처럼 폭이 좁은 글자가 섞이면 칸 중앙에서 왼쪽으로 쏠려 보이는 문제가 있었음)
+ */
 export function ManuscriptInput({
   value,
   onChange,
@@ -62,21 +66,23 @@ export function ManuscriptInput({
   placeholder?: string;
 }) {
   const cellRem = 2.5;
+  const cells = useMemo(() => toCells(value, columns * rows), [value, columns, rows]);
+
   return (
     <div className="relative inline-block">
       <div
-        className="pointer-events-none absolute inset-0 grid rounded-sm border border-[var(--paper-grid)]"
-        style={{
-          gridTemplateColumns: `repeat(${columns}, ${cellRem}rem)`,
-          gridTemplateRows: `repeat(${rows}, ${cellRem}rem)`,
-        }}
+        className="pointer-events-none grid rounded-sm border border-[var(--paper-grid)]"
+        style={{ gridTemplateColumns: `repeat(${columns}, ${cellRem}rem)` }}
         aria-hidden="true"
       >
-        {Array.from({ length: columns * rows }).map((_, i) => (
+        {cells.map((ch, i) => (
           <span
             key={i}
-            className="border-[0.5px] border-[color-mix(in_srgb,var(--paper-grid)_70%,transparent)]"
-          />
+            className="flex items-center justify-center border-[0.5px] border-[color-mix(in_srgb,var(--paper-grid)_70%,transparent)] font-mono text-xl text-[var(--ink)]"
+            style={{ width: `${cellRem}rem`, height: `${cellRem}rem` }}
+          >
+            {ch}
+          </span>
         ))}
       </div>
       <textarea
@@ -86,14 +92,10 @@ export function ManuscriptInput({
         aria-label={ariaLabel}
         placeholder={placeholder}
         spellCheck={false}
-        className="relative block resize-none bg-transparent p-0 font-mono text-[var(--ink)] caret-[var(--stamp-red)] outline-none placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--stamp-red)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)]"
+        className="absolute inset-0 block resize-none bg-transparent p-0 font-mono text-transparent caret-[var(--stamp-red)] outline-none placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--stamp-red)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)]"
         style={{
-          width: `${columns * cellRem}rem`,
-          height: `${rows * cellRem}rem`,
-          lineHeight: `${cellRem}rem`,
           fontSize: "1.25rem",
-          letterSpacing: `${cellRem - 1.25}rem`,
-          textIndent: `${(cellRem - 1.25) / 2}rem`,
+          lineHeight: `${cellRem}rem`,
           wordBreak: "break-all",
           whiteSpace: "pre-wrap",
         }}
