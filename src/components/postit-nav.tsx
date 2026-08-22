@@ -38,7 +38,7 @@ export function PostitNav({ loggedIn }: { loggedIn: boolean }) {
               } as React.CSSProperties
             }
             className={[
-              "group relative select-none py-2 pl-6 pr-3 font-sans text-sm font-bold transition-transform duration-200",
+              "group relative select-none whitespace-nowrap py-2 pl-6 pr-3 font-sans text-sm font-bold transition-transform duration-200",
               "[transform:rotate(var(--postit-r))] lg:[transform:translateX(var(--postit-x))_rotate(var(--postit-r))]",
               "lg:hover:[transform:translateX(calc(var(--postit-x)+8px))_rotate(var(--postit-r))]",
               "rounded-[3px_6px_6px_3px] lg:rounded-[0_6px_6px_0]",

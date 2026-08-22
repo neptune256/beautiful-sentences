@@ -36,7 +36,7 @@ export function NotebookShell({ children }: { children: React.ReactNode }) {
         <div className="relative min-h-[36rem] overflow-hidden rounded-[0.15rem_0.5rem_0.5rem_0.15rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.55)]">
           <div
             key={pathname}
-            className="page-flip manuscript-bg relative py-8 pl-12 pr-6 sm:py-10 sm:pr-10"
+            className="page-flip manuscript-bg relative min-h-[36rem] py-8 pl-12 pr-6 sm:py-10 sm:pr-10"
           >
             <div
               aria-hidden="true"
