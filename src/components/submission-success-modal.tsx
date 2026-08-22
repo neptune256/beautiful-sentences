@@ -32,21 +32,21 @@ export function SubmissionSuccessModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--wood-shadow)]/70 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="w-full max-w-md overflow-hidden rounded-3xl border border-amber-900/10 bg-[#f4ecd8] shadow-2xl dark:border-amber-200/10 dark:bg-neutral-900"
+            className="manuscript-bg w-full max-w-md overflow-hidden rounded-sm border border-[var(--paper-grid)] shadow-2xl"
             initial={{ opacity: 0, scale: 0.92, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 6 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
           >
             <div className="px-8 pt-8 pb-6">
-              <p className="text-center text-xs tracking-[0.3em] text-amber-900/40 uppercase dark:text-amber-200/40">
+              <p className="text-center font-sans text-xs tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_45%,transparent)] uppercase">
                 오늘의 원고지
               </p>
 
@@ -55,13 +55,14 @@ export function SubmissionSuccessModal({
               <ManuscriptGrid key={content} content={content} />
             </div>
 
-            <div className="border-t border-amber-900/10 bg-[#efe4cc] px-8 py-6 text-center dark:border-amber-200/10 dark:bg-neutral-900/60">
-              <p className="font-serif text-sm tracking-wide text-amber-950/70 dark:text-amber-100/70">
+            <div className="border-t border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_80%,var(--wood-shadow))] px-8 py-6 text-center">
+              <p className="font-serif text-sm tracking-wide text-[var(--ink)]">
                 당신의 문장이 밤하늘에 기록되었습니다.
               </p>
               <button
+                type="button"
                 onClick={onClose}
-                className="mt-5 rounded-full bg-slate-800 px-6 py-2 text-sm tracking-wide text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                className="mt-5 rounded-full bg-[var(--stamp-red)] px-6 py-2 font-sans text-sm font-bold tracking-wide text-[var(--paper-cream)] transition-transform duration-300 hover:scale-105"
               >
                 닫기
               </button>
@@ -93,13 +94,13 @@ function ManuscriptGrid({ content }: { content: string }) {
 
   return (
     <div
-      className="mx-auto mt-5 grid w-fit gap-0 rounded-sm border border-amber-900/20 dark:border-amber-200/15"
+      className="mx-auto mt-5 grid w-fit gap-0 rounded-sm border border-[var(--paper-grid)]"
       style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}
     >
       {cells.map((ch, i) => (
         <span
           key={i}
-          className="flex h-7 w-7 items-center justify-center border border-amber-900/10 text-sm text-slate-800 sm:h-8 sm:w-8 dark:border-amber-200/10 dark:text-slate-100"
+          className="flex h-7 w-7 items-center justify-center border border-[color-mix(in_srgb,var(--paper-grid)_70%,transparent)] text-sm text-[var(--ink)] sm:h-8 sm:w-8"
         >
           {i < visibleCount && ch && (
             <motion.span

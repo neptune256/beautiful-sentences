@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitProposal } from "@/app/actions/propose";
+import { ManuscriptInput } from "@/components/manuscript";
 
 export function ProposalForm({ ticketId }: { ticketId: string }) {
   const [content, setContent] = useState("");
@@ -23,31 +24,40 @@ export function ProposalForm({ ticketId }: { ticketId: string }) {
 
   if (submitted) {
     return (
-      <p className="text-sm text-black/70 dark:text-white/70">
-        제안이 등록됐습니다. Ivy의 승인을 기다려주세요.
+      <p className="stamp-in font-serif text-lg font-bold text-[var(--stamp-red)]">
+        제안 접수됨
+        <br />
+        <span className="font-sans text-xs font-normal text-[color-mix(in_srgb,var(--ink)_60%,transparent)]">
+          Ivy의 승인을 기다려주세요.
+        </span>
       </p>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={4}
-        placeholder="상황 문장을 입력하세요. (예: 우리는 밤하늘의 별을 보기 위해 높은 산에 올라갔다.)"
-        className="w-full rounded-md border border-black/10 bg-transparent p-3 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-      />
-      <div className="flex items-center gap-3">
+    <section className="flex flex-col gap-3">
+      <div className="overflow-x-auto pb-1">
+        <ManuscriptInput
+          value={content}
+          onChange={setContent}
+          columns={12}
+          rows={3}
+          maxLength={500}
+          ariaLabel="제안 문장 입력"
+          placeholder="상황 문장을 입력하세요."
+        />
+      </div>
+      <div className="flex items-center gap-6">
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={isPending || content.trim().length === 0}
-          className="rounded-full bg-black px-4 py-1.5 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-black"
+          className="rounded-sm bg-[var(--stamp-red)] px-6 py-2.5 font-sans text-sm font-bold text-[var(--paper-cream)] transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--stamp-red)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           {isPending ? "제출 중..." : "제안 제출"}
         </button>
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        {error && <span className="text-xs text-[var(--stamp-red)]">{error}</span>}
       </div>
-    </div>
+    </section>
   );
 }

@@ -1,23 +1,29 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Gowun_Batang } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Noto_Serif_KR, Nanum_Gothic_Coding, Nanum_Gothic } from "next/font/google";
 import { Nav } from "@/components/nav";
+import { NotebookShell } from "@/components/notebook-shell";
 import { OnboardingModals } from "@/components/onboarding-modals";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSerifKR = Noto_Serif_KR({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const gowunBatang = Gowun_Batang({
+  weight: ["400", "600", "700"],
   variable: "--font-serif-kr",
+  display: "swap",
+});
+
+const nanumGothicCoding = Nanum_Gothic_Coding({
   subsets: ["latin"],
   weight: ["400", "700"],
+  variable: "--font-mono-kr",
+  display: "swap",
+});
+
+const nanumGothic = Nanum_Gothic({
+  subsets: ["latin"],
+  weight: ["400", "700", "800"],
+  variable: "--font-sans-kr",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,18 +31,23 @@ export const metadata: Metadata = {
   description: "매일 하나의 상황 문장을 나만의 문체로 다시 쓰는 소설 창작 커뮤니티",
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#B87F4C",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} ${gowunBatang.variable} h-full antialiased`}
+      className={`${notoSerifKR.variable} ${nanumGothicCoding.variable} ${nanumGothic.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-[#faf9f6] text-slate-800 dark:bg-neutral-950 dark:text-slate-100">
+      <body className="desk-surface flex min-h-full flex-col items-center px-4 py-8 sm:py-16">
         <OnboardingModals />
-        <Nav />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-          {children}
-        </main>
+        <div className="relative w-full max-w-2xl" style={{ perspective: "2000px" }}>
+          <Nav />
+          <NotebookShell>{children}</NotebookShell>
+        </div>
       </body>
     </html>
   );

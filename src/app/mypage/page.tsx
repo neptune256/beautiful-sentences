@@ -9,13 +9,15 @@ export default async function MyPage() {
 
   if (!user) {
     return (
-      <div className="space-y-6">
-        <div>
-          <p className="text-sm text-black/50 dark:text-white/50">마이페이지</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-2">
+          <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+            마이페이지
+          </span>
+          <h1 className="font-serif text-xl tracking-wide text-[var(--ink)] sm:text-2xl">
             로그인이 필요합니다
           </h1>
-        </div>
+        </header>
       </div>
     );
   }
@@ -27,23 +29,34 @@ export default async function MyPage() {
     .single();
 
   return (
-    <div className="space-y-10">
-      <div>
-        <p className="text-sm text-black/50 dark:text-white/50">마이페이지</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-col gap-2">
+        <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+          마이페이지
+        </span>
+        <h1 className="font-serif text-xl tracking-wide text-[var(--ink)] sm:text-2xl">
           {profile?.nickname}
         </h1>
-      </div>
+      </header>
 
-      <div>
-        <p className="text-sm text-black/50 dark:text-white/50">누적 포인트</p>
-        <p className="mt-1 text-xl font-semibold">{profile?.points ?? 0}점</p>
-      </div>
+      <section className="flex items-center justify-between rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-4">
+        <div className="flex flex-col">
+          <span className="font-sans text-xs font-bold tracking-[0.2em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+            누적 포인트
+          </span>
+          <span className="font-serif text-3xl font-bold text-[var(--stamp-red)]">
+            {(profile?.points ?? 0).toLocaleString()}
+            <span className="ml-1 text-base text-[var(--ink)]">점</span>
+          </span>
+        </div>
+      </section>
 
-      <div className="space-y-3">
-        <p className="text-sm font-semibold">닉네임 변경</p>
+      <section className="flex flex-col gap-3">
+        <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+          닉네임 변경
+        </span>
         <NicknameForm defaultNickname={profile?.nickname ?? ""} />
-      </div>
+      </section>
     </div>
   );
 }

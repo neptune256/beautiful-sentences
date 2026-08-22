@@ -33,14 +33,16 @@ export default async function YesterdayPage() {
 
   if (!round) {
     return (
-      <div className="space-y-6">
-        <div>
-          <p className="text-sm text-black/50 dark:text-white/50">어제의 결과</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-2">
+          <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+            어제의 결과
+          </span>
+          <h1 className="font-serif text-xl tracking-wide text-[var(--ink)] sm:text-2xl">
             아직 공개된 결과가 없습니다
           </h1>
-        </div>
-        <p className="text-black/70 dark:text-white/70">
+        </header>
+        <p className="font-serif text-base leading-relaxed text-[color-mix(in_srgb,var(--ink)_75%,transparent)]">
           전날 상황 문장, 참가자 전원의 글, 1위 및 선정 이유가 여기에 표시됩니다.
         </p>
       </div>
@@ -67,30 +69,35 @@ export default async function YesterdayPage() {
   ]);
 
   return (
-    <div className="space-y-10">
-      <div>
-        <p className="text-sm text-black/50 dark:text-white/50">
-          {round.round_date}의 상황 문장
-        </p>
-        <h1 className="mt-2 text-xl leading-relaxed font-medium">
-          {situation?.content}
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-col gap-2">
+        <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+          어제의 결과 · {round.round_date}
+        </span>
+        <h1 className="font-serif text-xl tracking-wide text-[var(--ink)] sm:text-2xl">
+          어제의 문장에 다른 이들이 남긴 문체들.
         </h1>
-      </div>
+        <p className="font-serif text-base leading-relaxed text-[color-mix(in_srgb,var(--ink)_75%,transparent)]">
+          &ldquo;{situation?.content}&rdquo;
+        </p>
+      </header>
 
       {evaluation && (
-        <div className="rounded-lg border border-black/10 p-5 dark:border-white/10">
-          <p className="text-sm font-semibold">1위 선정 이유</p>
-          <p className="mt-2 text-sm leading-relaxed text-black/70 dark:text-white/70">
+        <div className="manuscript-bg rounded-sm border border-[var(--paper-grid)] p-4 shadow-[0_2px_6px_rgba(0,0,0,0.12)]">
+          <p className="font-sans text-xs font-bold tracking-[0.2em] text-[var(--stamp-red)]">
+            1위 선정 이유
+          </p>
+          <p className="mt-2 font-serif text-sm leading-relaxed text-[var(--ink)]">
             {evaluation.reasoning}
           </p>
         </div>
       )}
 
-      <div className="space-y-4">
-        <p className="text-sm text-black/50 dark:text-white/50">
+      <section className="flex flex-col gap-3">
+        <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
           참가자들의 글 ({submissions?.length ?? 0})
-        </p>
-        <ul className="space-y-4">
+        </span>
+        <ul className="flex flex-col gap-4">
           {submissions?.map((s) => {
             const isWinner = s.id === evaluation?.winner_submission_id;
             const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
@@ -99,31 +106,31 @@ export default async function YesterdayPage() {
             return (
               <li
                 key={s.id}
-                className={`rounded-lg border p-4 ${
-                  isWinner
-                    ? "border-amber-500/50 bg-amber-500/5"
-                    : "border-black/10 dark:border-white/10"
+                className={`manuscript-bg rounded-sm border p-4 shadow-[0_2px_6px_rgba(0,0,0,0.12)] ${
+                  isWinner ? "border-[var(--stamp-red)]" : "border-[var(--paper-grid)]"
                 }`}
               >
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2">
                   {isWinner && (
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    <span className="rounded-full bg-[var(--stamp-red)] px-2 py-0.5 font-sans text-xs font-bold text-[var(--paper-cream)]">
                       1위
                     </span>
                   )}
                   {s.eval_passed_gate === false && (
-                    <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
+                    <span className="rounded-full border border-[var(--stamp-red)] px-2 py-0.5 font-sans text-xs font-bold text-[var(--stamp-red)]">
                       1단계 기준 미통과
                     </span>
                   )}
-                  <span className="font-medium">{profile?.nickname ?? "익명"}</span>
+                  <span className="font-sans text-sm font-bold text-[color-mix(in_srgb,var(--ink)_70%,transparent)]">
+                    {profile?.nickname ?? "익명"}
+                  </span>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-black/80 dark:text-white/80">
+                <p className="mt-2 whitespace-pre-wrap font-mono text-base leading-relaxed text-[var(--ink)]">
                   {s.content}
                 </p>
 
                 {scores && (
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-black/50 dark:text-white/50">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-[color-mix(in_srgb,var(--ink)_60%,transparent)]">
                     {(Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[]).map(
                       (key) => (
                         <span key={key}>
@@ -131,14 +138,14 @@ export default async function YesterdayPage() {
                         </span>
                       ),
                     )}
-                    <span className="font-medium text-black/70 dark:text-white/70">
+                    <span className="font-bold text-[var(--ink)]">
                       총점 {totalScore(scores)}/50
                     </span>
                   </div>
                 )}
 
                 {!isWinner && (s.eval_gate_issue || s.eval_note) && (
-                  <p className="mt-2 text-xs text-black/50 dark:text-white/50">
+                  <p className="mt-2 font-sans text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
                     아쉬운 점: {s.eval_gate_issue || s.eval_note}
                   </p>
                 )}
@@ -146,7 +153,7 @@ export default async function YesterdayPage() {
             );
           })}
         </ul>
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,7 +1,162 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans-kr);
+  --font-mono: var(--font-mono-kr);
   --font-serif: var(--font-serif-kr);
+  --color-wood-base: var(--wood-base);
+  --color-wood-shadow: var(--wood-shadow);
+  --color-paper-cream: var(--paper-cream);
+  --color-paper-grid: var(--paper-grid);
+  --color-ink: var(--ink);
+  --color-postit-yellow: var(--postit-yellow);
+  --color-postit-active: var(--postit-active);
+  --color-stamp-red: var(--stamp-red);
+}
+
+:root {
+  color-scheme: light;
+
+  /* 아름다운 문장 — 원목·원고지 팔레트 */
+  --wood-base: #b87f4c;
+  --wood-shadow: #7a4e28;
+  --paper-cream: #f6eedf;
+  --paper-grid: #d8c7a8;
+  --ink: #3b322a;
+  --postit-yellow: #f2cd60;
+  --postit-active: #e8985b;
+  --stamp-red: #b23a24;
+}
+
+body {
+  color: var(--ink);
+  background-color: var(--wood-base);
+}
+
+/* ---------- 책상: 나무 결 텍스처 + 비네트 ---------- */
+.desk-surface {
+  background-color: var(--wood-base);
+  background-image:
+    radial-gradient(
+      130% 120% at 50% 45%,
+      transparent 45%,
+      color-mix(in srgb, var(--wood-shadow) 55%, transparent) 100%
+    ),
+    repeating-linear-gradient(
+      92deg,
+      color-mix(in srgb, var(--wood-shadow) 16%, transparent) 0px,
+      color-mix(in srgb, var(--wood-shadow) 16%, transparent) 2px,
+      transparent 2px,
+      transparent 9px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--wood-shadow) 8%, transparent) 0px,
+      color-mix(in srgb, var(--wood-shadow) 8%, transparent) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #d89a63 40%, transparent),
+      transparent 40%
+    );
+}
+
+/* ---------- 원고지 격자 텍스처 ---------- */
+.manuscript-bg {
+  background-color: var(--paper-cream);
+  background-image:
+    radial-gradient(
+      120% 120% at 50% 0%,
+      color-mix(in srgb, #fff 25%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(color-mix(in srgb, var(--paper-grid) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--paper-grid) 45%, transparent) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 2.2rem,
+    2.2rem 2.2rem;
+}
+
+/* ---------- 페이지 넘김 애니메이션 ---------- */
+@keyframes page-flip-in {
+  0% {
+    transform: rotateY(-118deg);
+    opacity: 0.15;
+    box-shadow: -50px 0 70px -20px rgba(0, 0, 0, 0.6);
+  }
+  45% {
+    opacity: 1;
+    box-shadow: -30px 0 60px -18px rgba(0, 0, 0, 0.5);
+  }
+  80% {
+    transform: rotateY(8deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+    opacity: 1;
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+.page-flip {
+  transform-origin: left center;
+  backface-visibility: hidden;
+  animation: page-flip-in 640ms cubic-bezier(0.33, 0.9, 0.4, 1);
+}
+
+/* 왼쪽 세로 제본을 감는 금속 코일 하나 (가로 캡슐) */
+.spring-coil {
+  position: relative;
+  width: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    #eef0f2 0%,
+    #c3c7cd 30%,
+    #6f747c 62%,
+    #9a9ea5 82%,
+    #d9dce0 100%
+  );
+  box-shadow:
+    inset -2px 0 3px rgba(0, 0, 0, 0.4),
+    inset 2px 0 2px rgba(255, 255, 255, 0.7),
+    2px 2px 4px rgba(0, 0, 0, 0.45);
+}
+.spring-coil::after {
+  content: "";
+  position: absolute;
+  inset: 12% auto 12% 40%;
+  width: 34%;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--wood-shadow) 60%, transparent);
+  filter: blur(0.5px);
+}
+
+@keyframes stamp-press {
+  0% {
+    transform: scale(1.6) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.85) rotate(-14deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-14deg);
+    opacity: 1;
+  }
+}
+
+.stamp-in {
+  animation: stamp-press 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-flip,
+  .stamp-in {
+    animation: none;
+  }
 }

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { saveSubmission } from "@/app/actions/submissions";
 import { SubmissionSuccessModal } from "@/components/submission-success-modal";
+import { ManuscriptInput } from "@/components/manuscript";
 
 // 은은한 골드·브라운 톤 별가루가 화면 양쪽에서 부드럽게 퍼지는 정도로만 터뜨린다.
 function fireSuccessConfetti() {
@@ -50,28 +51,54 @@ export function SubmissionForm({
   }
 
   return (
-    <div className="space-y-4">
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={8}
-        placeholder="이 상황을 나만의 문체로 다시 써보세요."
-        className="w-full rounded-2xl border border-slate-200/70 bg-white/70 p-5 font-serif text-base leading-loose tracking-wide text-slate-800 outline-none transition-colors duration-300 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-slate-400 focus:border-slate-300 focus:bg-white dark:border-white/10 dark:bg-neutral-900/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-white/20 dark:focus:bg-neutral-900"
-      />
+    <section className="flex flex-col gap-3">
+      <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+        나의 문장
+      </span>
+      <div className="overflow-x-auto pb-1">
+        <ManuscriptInput
+          value={content}
+          onChange={setContent}
+          columns={12}
+          rows={6}
+          maxLength={2000}
+          ariaLabel="나의 문장 입력"
+          placeholder="이 상황을 나만의 문체로 다시 써보세요."
+        />
+      </div>
       <div className="flex items-center gap-4">
+        <span className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+          {Array.from(content).length}자
+        </span>
+      </div>
+
+      <div className="mt-2 flex items-center gap-6">
         <button
+          type="button"
           onClick={handleSave}
           disabled={isPending || content.trim().length === 0}
-          className="rounded-full bg-slate-800 px-5 py-2 text-sm tracking-wide text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-700 disabled:pointer-events-none disabled:opacity-40 disabled:hover:translate-y-0 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+          className="relative grid h-24 w-24 place-items-center rounded-full border-[3px] border-[var(--stamp-red)] font-serif text-lg font-bold text-[var(--stamp-red)] transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--stamp-red)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)] disabled:cursor-not-allowed disabled:opacity-30"
         >
-          {isPending ? "저장 중..." : "저장"}
+          <span className="leading-none">
+            {isPending ? "저장 중" : "제출"}
+            <br />
+            <span className="text-sm">提出</span>
+          </span>
+          <span className="pointer-events-none absolute inset-1 rounded-full border border-dashed border-[var(--stamp-red)] opacity-60" />
         </button>
         {savedAt && !error && (
-          <span className="text-xs tracking-wide text-slate-400 dark:text-slate-500">
-            {savedAt} 저장됨 · 자정까지 계속 수정할 수 있어요
+          <span
+            key={savedAt}
+            className="stamp-in font-serif text-lg font-bold text-[var(--stamp-red)]"
+          >
+            {savedAt} 저장됨
+            <br />
+            <span className="font-sans text-xs font-normal text-[color-mix(in_srgb,var(--ink)_60%,transparent)]">
+              자정까지 계속 수정할 수 있어요
+            </span>
           </span>
         )}
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        {error && <span className="text-xs text-[var(--stamp-red)]">{error}</span>}
       </div>
 
       <SubmissionSuccessModal
@@ -79,6 +106,6 @@ export function SubmissionForm({
         content={content}
         onClose={() => setShowSuccess(false)}
       />
-    </div>
+    </section>
   );
 }

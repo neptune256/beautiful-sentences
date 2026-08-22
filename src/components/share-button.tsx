@@ -76,13 +76,14 @@ export function ShareButton() {
         />
       )}
       <button
+        type="button"
         onClick={handleShare}
         disabled={isPending}
-        className="rounded-full bg-black px-4 py-1.5 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-black"
+        className="rounded-sm bg-[var(--stamp-red)] px-6 py-2.5 font-sans text-sm font-bold text-[var(--paper-cream)] transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--stamp-red)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {isPending ? "처리 중..." : KAKAO_JS_KEY ? "카카오톡으로 공유하기" : "사이트 공유하기"}
       </button>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-[var(--stamp-red)]">{error}</p>}
     </div>
   );
 }

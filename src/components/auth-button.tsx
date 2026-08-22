@@ -28,11 +28,14 @@ export function AuthButton({ nickname }: { nickname: string | null }) {
 
   if (nickname) {
     return (
-      <div className="flex items-center gap-3 text-sm">
-        <span className="text-black/70 dark:text-white/70">{nickname}</span>
+      <div className="flex items-center gap-3 font-sans text-sm">
+        <span className="font-bold text-[color-mix(in_srgb,var(--paper-cream)_92%,#fff)]">
+          {nickname}
+        </span>
         <button
+          type="button"
           onClick={signOut}
-          className="text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
+          className="text-[color-mix(in_srgb,var(--paper-cream)_70%,transparent)] hover:text-[var(--paper-cream)]"
         >
           로그아웃
         </button>
@@ -41,16 +44,18 @@ export function AuthButton({ nickname }: { nickname: string | null }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 font-sans text-sm font-bold">
       <button
+        type="button"
         onClick={signInWithGoogle}
-        className="rounded-full border border-black/10 px-4 py-1.5 text-sm hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+        className="rounded-full border-2 border-[var(--paper-cream)] px-4 py-1.5 text-[var(--paper-cream)] transition-transform hover:scale-105"
       >
         구글로 로그인
       </button>
       <button
+        type="button"
         onClick={signInWithKakao}
-        className="rounded-full bg-[#FEE500] px-4 py-1.5 text-sm text-black/85 hover:brightness-95"
+        className="rounded-full bg-[#FEE500] px-4 py-1.5 text-black/85 transition-transform hover:scale-105"
       >
         카카오로 로그인
       </button>

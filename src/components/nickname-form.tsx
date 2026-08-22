@@ -34,26 +34,29 @@ export function NicknameForm({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <div className="flex gap-2">
         <input
           type="text"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           maxLength={20}
-          className="flex-1 rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
+          className="flex-1 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_92%,#fff)] px-3 py-2 font-sans text-sm text-[var(--ink)] outline-none focus:border-[var(--stamp-red)]"
         />
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={isPending || nickname.trim().length === 0}
-          className="shrink-0 rounded-full bg-black px-4 py-2 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-black"
+          className="shrink-0 rounded-sm bg-[var(--stamp-red)] px-4 py-2 font-sans text-sm font-bold text-[var(--paper-cream)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? "저장 중..." : submitLabel}
         </button>
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-[var(--stamp-red)]">{error}</p>}
       {savedAt && !error && (
-        <p className="text-xs text-black/50 dark:text-white/50">{savedAt} 저장됨</p>
+        <p className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+          {savedAt} 저장됨
+        </p>
       )}
     </div>
   );
