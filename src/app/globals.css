@@ -12,6 +12,9 @@
   --color-postit-yellow: var(--postit-yellow);
   --color-postit-active: var(--postit-active);
   --color-stamp-red: var(--stamp-red);
+  --color-postit-pink: var(--postit-pink);
+  --color-postit-mint: var(--postit-mint);
+  --color-postit-blue: var(--postit-blue);
 }
 
 :root {
@@ -26,6 +29,9 @@
   --postit-yellow: #f2cd60;
   --postit-active: #e8985b;
   --stamp-red: #b23a24;
+  --postit-pink: #e8a8a0;
+  --postit-mint: #a3c9a8;
+  --postit-blue: #9cc0d1;
 }
 
 body {

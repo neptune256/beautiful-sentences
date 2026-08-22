@@ -10,6 +10,7 @@ const TABS: Tab[] = [
   { href: "/yesterday", label: "어제의 결과", rotate: "1.2deg", depth: 20 },
   { href: "/ranking", label: "랭킹", rotate: "-0.8deg", depth: 12 },
   { href: "/propose", label: "문장 제안하기", rotate: "1.6deg", depth: 22 },
+  { href: "/board", label: "자유 게시판", rotate: "-1.4deg", depth: 16 },
 ];
 
 const MYPAGE_TAB: Tab = { href: "/mypage", label: "마이페이지", rotate: "-1.2deg", depth: 14 };

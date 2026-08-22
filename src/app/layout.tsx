@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Serif_KR, Nanum_Gothic_Coding, Nanum_Gothic } from "next/font/google";
 import { Nav } from "@/components/nav";
-import { NotebookShell } from "@/components/notebook-shell";
+import { PageChrome } from "@/components/page-chrome";
 import { OnboardingModals } from "@/components/onboarding-modals";
 import "./globals.css";
 
@@ -44,10 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="desk-surface flex min-h-full flex-col items-center px-4 py-8 sm:py-16">
         <OnboardingModals />
-        <div className="relative w-full max-w-2xl" style={{ perspective: "2000px" }}>
-          <Nav />
-          <NotebookShell>{children}</NotebookShell>
-        </div>
+        <PageChrome nav={<Nav />}>{children}</PageChrome>
       </body>
     </html>
   );
