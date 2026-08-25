@@ -15,11 +15,13 @@ import {
 import { BoardNote } from "@/components/board-note";
 import { BoardComposeModal } from "@/components/board-compose-modal";
 import { BoardCommentsModal } from "@/components/board-comments-modal";
+import {
+  BOARD_CANVAS_WIDTH as CANVAS_WIDTH,
+  BOARD_CANVAS_HEIGHT as CANVAS_HEIGHT,
+  BOARD_NOTE_WIDTH as NOTE_WIDTH,
+  BOARD_NOTE_HEIGHT as NOTE_HEIGHT,
+} from "@/lib/board-constants";
 
-const CANVAS_WIDTH = 2400;
-const CANVAS_HEIGHT = 1400;
-const NOTE_WIDTH = 224;
-const NOTE_HEIGHT = 170;
 const ANON_NAME_KEY = "bs_board_anon_name";
 const EXPIRE_CHECK_MS = 15000;
 

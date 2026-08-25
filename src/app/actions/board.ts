@@ -3,11 +3,25 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import {
+  BOARD_CANVAS_WIDTH,
+  BOARD_CANVAS_HEIGHT,
+  BOARD_NOTE_WIDTH,
+  BOARD_NOTE_HEIGHT,
+} from "@/lib/board-constants";
 
 const BOARD_TTL_HOURS = 24;
+const WINNER_BOARD_TTL_HOURS = 24 * 7;
 const BOARD_COLORS = ["yellow", "pink", "mint", "blue"] as const;
 const CONTENT_MAX_LENGTH = 300;
 const COMMENT_MAX_LENGTH = 200;
+
+function randomBoardPosition() {
+  return {
+    x: Math.random() * (BOARD_CANVAS_WIDTH - BOARD_NOTE_WIDTH),
+    y: Math.random() * (BOARD_CANVAS_HEIGHT - BOARD_NOTE_HEIGHT),
+  };
+}
 
 export type BoardPost = {
   id: string;
@@ -95,6 +109,46 @@ export async function createBoardPost(params: {
   return data as BoardPost;
 }
 
+// 라운드 마감 cron이 그날의 1위 글을 자유 게시판에 자동으로 올릴 때 쓴다.
+// 로그인 세션이 없는 서버 컨텍스트에서 호출되므로 currentProfile()을 거치지 않고
+// 대상 유저 정보를 직접 받아 서비스 롤로 삽입하며, 일반 글(24시간)과 달리
+// 7일간 유지되도록 ttl_hours를 다르게 준다(좋아요 리셋도 이 값을 그대로 따른다).
+export async function createWinnerBoardPost(params: {
+  content: string;
+  authorId: string;
+  authorName: string;
+}): Promise<BoardPost> {
+  const content = params.content.trim();
+  if (!content) throw new Error("내용이 비어 있습니다.");
+
+  const rotation = Math.random() * 10 - 5;
+  const color = BOARD_COLORS[Math.floor(Math.random() * BOARD_COLORS.length)];
+  const { x, y } = randomBoardPosition();
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("board_posts")
+    .insert({
+      content,
+      author_name: params.authorName,
+      user_id: params.authorId,
+      x,
+      y,
+      rotation,
+      color,
+      source: "daily_winner",
+      ttl_hours: WINNER_BOARD_TTL_HOURS,
+      expires_at: new Date(Date.now() + WINNER_BOARD_TTL_HOURS * 3600 * 1000).toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/board");
+  return data as BoardPost;
+}
+
 export async function moveBoardPost(
   postId: string,
   x: number,
@@ -138,7 +192,6 @@ export async function likeBoardPost(postId: string, anonToken: string | null) {
     p_post_id: postId,
     p_user_id: profile?.id ?? null,
     p_anon_token: profile ? null : anonToken,
-    p_reset_hours: BOARD_TTL_HOURS,
   });
 
   if (error) throw new Error(error.message);

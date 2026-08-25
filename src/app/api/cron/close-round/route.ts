@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { evaluateBatch, totalScore, writeWinnerReasoning } from "@/lib/gemini";
 import { logGeminiUsage } from "@/lib/gemini-usage";
 import { todayKst } from "@/lib/date";
+import { createWinnerBoardPost } from "@/app/actions/board";
 import { NextResponse } from "next/server";
 
 type CriterionScores = {
@@ -178,6 +179,21 @@ async function closeRound(
         p_amount: 50,
       });
       evaluated = true;
+
+      try {
+        const { data: winnerProfile } = await supabase
+          .from("profiles")
+          .select("nickname")
+          .eq("id", winner.user_id)
+          .single();
+        await createWinnerBoardPost({
+          content: winner.content,
+          authorId: winner.user_id,
+          authorName: winnerProfile?.nickname ?? "익명",
+        });
+      } catch (error) {
+        console.error(`Auto-posting winner to board failed for round ${round.id}`, error);
+      }
     } catch (error) {
       console.error(`Winner reasoning failed for round ${round.id}`, error);
     }
