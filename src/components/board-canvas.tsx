@@ -66,8 +66,10 @@ export function BoardCanvas({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "board_posts" },
         (payload) => {
-          const next = payload.new as BoardPost;
-          setPosts((prev) => prev.map((p) => (p.id === next.id ? next : p)));
+          // REPLICA IDENTITY FULL로 설정해뒀지만, 혹시라도 일부 컬럼이 빠진 페이로드가 오더라도
+          // 기존 값을 덮어쓰지 않도록 완전 교체 대신 병합한다(긴 글의 content가 사라지는 사고 방지).
+          const next = payload.new as Partial<BoardPost> & { id: string };
+          setPosts((prev) => prev.map((p) => (p.id === next.id ? { ...p, ...next } : p)));
         },
       )
       .on(
