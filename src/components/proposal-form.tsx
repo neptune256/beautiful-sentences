@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { submitProposal } from "@/app/actions/propose";
-import { ManuscriptInput } from "@/components/manuscript";
 
 export function ProposalForm({ ticketId }: { ticketId: string }) {
   const [content, setContent] = useState("");
@@ -36,17 +35,15 @@ export function ProposalForm({ ticketId }: { ticketId: string }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="overflow-x-auto pb-1">
-        <ManuscriptInput
-          value={content}
-          onChange={setContent}
-          columns={12}
-          rows={3}
-          maxLength={500}
-          ariaLabel="제안 문장 입력"
-          placeholder="상황 문장을 입력하세요."
-        />
-      </div>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        maxLength={500}
+        rows={3}
+        aria-label="제안 문장 입력"
+        placeholder="상황 문장을 입력하세요."
+        className="w-full resize-none rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)]"
+      />
       <div className="flex items-center gap-6">
         <button
           type="button"
