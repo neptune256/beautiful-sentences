@@ -3,8 +3,6 @@
 import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-const MAX_LENGTH = 300;
-
 export function BoardComposeModal({
   open,
   showNameField,
@@ -77,15 +75,11 @@ export function BoardComposeModal({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                maxLength={MAX_LENGTH}
                 rows={5}
                 autoFocus
                 placeholder="자유롭게 적어 보세요."
                 className="w-full resize-none rounded-sm border border-[var(--paper-grid)] bg-[var(--paper-cream)] px-3 py-2 font-serif text-sm leading-relaxed text-[var(--ink)] outline-none focus:border-[var(--stamp-red)]"
               />
-              <div className="mt-1 text-right font-mono text-xs text-[color-mix(in_srgb,var(--ink)_50%,transparent)]">
-                {Array.from(content).length}/{MAX_LENGTH}
-              </div>
             </div>
 
             {error && (

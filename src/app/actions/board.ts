@@ -13,7 +13,6 @@ import {
 const BOARD_TTL_HOURS = 24;
 const WINNER_BOARD_TTL_HOURS = 24 * 7;
 const BOARD_COLORS = ["yellow", "pink", "mint", "blue"] as const;
-const CONTENT_MAX_LENGTH = 300;
 const COMMENT_MAX_LENGTH = 200;
 
 function randomBoardPosition() {
@@ -77,9 +76,6 @@ export async function createBoardPost(params: {
 }): Promise<BoardPost> {
   const content = params.content.trim();
   if (!content) throw new Error("내용을 입력해 주세요.");
-  if (Array.from(content).length > CONTENT_MAX_LENGTH) {
-    throw new Error(`${CONTENT_MAX_LENGTH}자 이내로 작성해 주세요.`);
-  }
 
   const profile = await currentProfile();
   if (!profile && !params.anonToken) {
