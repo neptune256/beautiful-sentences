@@ -20,9 +20,9 @@
 :root {
   color-scheme: light;
 
-  /* 아름다운 문장 — 원목·원고지 팔레트 */
-  --wood-base: #b87f4c;
-  --wood-shadow: #7a4e28;
+  /* 아름다운 문장 — 원목·원고지 팔레트 (어두운 원목 톤, 눈의 피로를 줄이기 위해 명도를 낮춤) */
+  --wood-base: #5c3e28;
+  --wood-shadow: #2e1d10;
   --paper-cream: #f6eedf;
   --paper-grid: #d8c7a8;
   --ink: #3b322a;
@@ -64,7 +64,7 @@ body {
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, #d89a63 40%, transparent),
+      color-mix(in srgb, #8a6242 40%, transparent),
       transparent 40%
     );
 }
