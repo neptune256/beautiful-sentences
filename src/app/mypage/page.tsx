@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NicknameForm } from "@/components/nickname-form";
+import { AttendanceCalendar } from "@/components/attendance-calendar";
+import { todayKst } from "@/lib/date";
+import { computeStreakInfo, getMonthAttendanceDays } from "@/lib/attendance";
 
 export default async function MyPage() {
   const supabase = await createClient();
@@ -28,6 +31,14 @@ export default async function MyPage() {
     .eq("id", user.id)
     .single();
 
+  const today = todayKst();
+  const [year, month] = today.split("-").map(Number);
+
+  const [streakInfo, attendanceDays] = await Promise.all([
+    computeStreakInfo(supabase, user.id, today),
+    getMonthAttendanceDays(supabase, user.id, year, month),
+  ]);
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -49,6 +60,32 @@ export default async function MyPage() {
             <span className="ml-1 text-base text-[var(--ink)]">점</span>
           </span>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="font-sans text-xs font-bold tracking-[0.2em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+            출석 현황
+          </span>
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="font-serif text-sm text-[var(--ink)]">
+              🔥 <span className="text-lg font-bold text-[var(--stamp-red)]">{streakInfo.currentStreak}</span>일 연속
+            </span>
+            <span className="font-serif text-sm text-[var(--ink)]">
+              최장 <span className="font-bold">{streakInfo.longestStreak}</span>일
+            </span>
+            <span className="font-serif text-sm text-[var(--ink)]">
+              총 <span className="font-bold">{streakInfo.totalDays}</span>일 출석
+            </span>
+          </div>
+        </div>
+
+        <AttendanceCalendar
+          initialYear={year}
+          initialMonth={month}
+          initialDays={attendanceDays}
+          todayStr={today}
+        />
       </section>
 
       <section className="flex flex-col gap-3">

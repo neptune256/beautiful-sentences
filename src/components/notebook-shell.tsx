@@ -4,39 +4,51 @@ import { usePathname } from "next/navigation";
 
 const HOLES = Array.from({ length: 15 });
 
-// v0 원본은 aspect-[1/1.414](A4) + overflow-hidden 고정 박스였지만,
-// 실제 콘텐츠(랭킹 목록, 어제의 결과 등)는 길이가 들쭉날쭉해서 min-height로 바꾸고 넘치면 자연스럽게 늘어나게 함.
+// A4 비율(1:1.4142) 고정 + overflow-hidden. 세로 스크롤은 절대 만들지 않고,
+// 뷰포트 높이가 부족하면 --nb-vpad(상단 nav+여백 예상치)를 뺀 나머지로 폭을 역산해서
+// 노트 전체가 항상 한 화면 안에 들어오게 한다. 넘치는 내용은 늘어나지 않고 그대로 잘린다.
+const pageBoxStyle: React.CSSProperties = {
+  width: "min(100%, calc((100dvh - var(--nb-vpad)) / 1.4142))",
+  aspectRatio: "1 / 1.4142",
+};
+
 export function NotebookShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="relative w-full" style={{ perspective: "2000px" }}>
+    <div
+      className="relative w-full [--nb-vpad:17rem] lg:[--nb-vpad:13rem]"
+      style={{ perspective: "2000px" }}
+    >
       <div className="relative pl-6">
         <div
           aria-hidden="true"
-          className="absolute left-6 right-0 top-0 min-h-[36rem] rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_52%,var(--wood-shadow))]"
-          style={{ transform: "translate(16px, 16px)" }}
+          className="absolute left-6 top-0 rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_52%,var(--wood-shadow))]"
+          style={{ ...pageBoxStyle, transform: "translate(16px, 16px)" }}
         />
         <div
           aria-hidden="true"
-          className="absolute left-6 right-0 top-0 min-h-[36rem] rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_64%,var(--wood-shadow))]"
-          style={{ transform: "translate(12px, 12px)" }}
+          className="absolute left-6 top-0 rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_64%,var(--wood-shadow))]"
+          style={{ ...pageBoxStyle, transform: "translate(12px, 12px)" }}
         />
         <div
           aria-hidden="true"
-          className="absolute left-6 right-0 top-0 min-h-[36rem] rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_76%,var(--wood-shadow))]"
-          style={{ transform: "translate(8px, 8px)" }}
+          className="absolute left-6 top-0 rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_76%,var(--wood-shadow))]"
+          style={{ ...pageBoxStyle, transform: "translate(8px, 8px)" }}
         />
         <div
           aria-hidden="true"
-          className="absolute left-6 right-0 top-0 min-h-[36rem] rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_88%,var(--wood-shadow))]"
-          style={{ transform: "translate(4px, 4px)" }}
+          className="absolute left-6 top-0 rounded-[0.15rem_0.5rem_0.5rem_0.15rem] bg-[color-mix(in_srgb,var(--paper-cream)_88%,var(--wood-shadow))]"
+          style={{ ...pageBoxStyle, transform: "translate(4px, 4px)" }}
         />
 
-        <div className="relative min-h-[36rem] overflow-hidden rounded-[0.15rem_0.5rem_0.5rem_0.15rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.55)]">
+        <div
+          className="relative overflow-hidden rounded-[0.15rem_0.5rem_0.5rem_0.15rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.55)]"
+          style={pageBoxStyle}
+        >
           <div
             key={pathname}
-            className="page-flip manuscript-bg relative min-h-[36rem] py-8 pl-12 pr-6 sm:py-10 sm:pr-10"
+            className="page-flip manuscript-bg relative h-full overflow-hidden py-8 pl-12 pr-6 sm:py-10 sm:pr-10"
           >
             <div
               aria-hidden="true"
@@ -53,7 +65,7 @@ export function NotebookShell({ children }: { children: React.ReactNode }) {
                 />
               ))}
             </div>
-            {children}
+            <div className="relative h-full overflow-hidden">{children}</div>
           </div>
         </div>
 

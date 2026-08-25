@@ -23,10 +23,14 @@ export function SubmissionSuccessModal({
   open,
   content,
   onClose,
+  streak,
+  isMilestone,
 }: {
   open: boolean;
   content: string;
   onClose: () => void;
+  streak?: number | null;
+  isMilestone?: boolean;
 }) {
   return (
     <AnimatePresence>
@@ -59,6 +63,23 @@ export function SubmissionSuccessModal({
               <p className="font-serif text-sm tracking-wide text-[var(--ink)]">
                 당신의 문장이 밤하늘에 기록되었습니다.
               </p>
+
+              {!!streak && streak > 0 && (
+                <div
+                  key={streak}
+                  className="stamp-in mt-4 inline-flex flex-col items-center gap-1"
+                >
+                  <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[var(--stamp-red)] px-4 py-1.5 font-serif text-base font-bold text-[var(--stamp-red)]">
+                    🔥 {streak}일 연속 출석
+                  </span>
+                  {isMilestone && (
+                    <span className="font-sans text-xs font-bold tracking-wide text-[color-mix(in_srgb,var(--stamp-red)_80%,var(--ink))]">
+                      대단해요! {streak}일을 채웠어요
+                    </span>
+                  )}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={onClose}

@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { evaluateSingleEntry } from "@/lib/gemini";
 import { logGeminiUsage } from "@/lib/gemini-usage";
 import { revalidatePath } from "next/cache";
+import { todayKst } from "@/lib/date";
+import { computeStreakInfo } from "@/lib/attendance";
 
 async function assertEditable(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -50,6 +52,10 @@ export async function saveSubmission(dailyRoundId: string, content: string) {
   }
 
   revalidatePath("/");
+  revalidatePath("/mypage");
+
+  const streak = await computeStreakInfo(supabase, user.id, todayKst());
+  return { streak };
 }
 
 /**

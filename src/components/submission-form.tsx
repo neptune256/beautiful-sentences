@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { saveSubmission, finalizeSubmission } from "@/app/actions/submissions";
 import { SubmissionSuccessModal } from "@/components/submission-success-modal";
+import { STREAK_MILESTONES } from "@/lib/attendance";
+import { todayKst } from "@/lib/date";
 
 type CriterionScores = {
   imagery: number;
@@ -32,6 +34,18 @@ function totalScore(scores: CriterionScores) {
   return Object.values(scores).reduce((sum, v) => sum + v, 0);
 }
 
+// 노트 한 페이지에 들어갈 만큼만 쓰게 하고, 다 차면 세로로 늘리는 대신 다음 페이지로 넘긴다.
+const PAGE_CAPACITY = 320;
+
+function splitPages(text: string): string[] {
+  if (text.length === 0) return [""];
+  const pages: string[] = [];
+  for (let i = 0; i < text.length; i += PAGE_CAPACITY) {
+    pages.push(text.slice(i, i + PAGE_CAPACITY));
+  }
+  return pages;
+}
+
 // 은은한 골드·브라운 톤 별가루가 화면 양쪽에서 부드럽게 퍼지는 정도로만 터뜨린다.
 function fireSuccessConfetti() {
   const shared: confetti.Options = {
@@ -48,6 +62,22 @@ function fireSuccessConfetti() {
   confetti({ ...shared, angle: 60, origin: { x: 0.15, y: 0.7 } });
   confetti({ ...shared, angle: 120, origin: { x: 0.85, y: 0.7 } });
 }
+
+// 연속 출석 마일스톤을 채운 날에만 불꽃 톤으로 한 번 더 터뜨린다.
+function fireStreakConfetti() {
+  confetti({
+    particleCount: 90,
+    spread: 100,
+    startVelocity: 35,
+    gravity: 0.7,
+    scalar: 0.9,
+    ticks: 260,
+    origin: { x: 0.5, y: 0.6 },
+    colors: ["#EAB308", "#B23A24", "#E8985B", "#8B6914"],
+  });
+}
+
+const STREAK_SHOWN_KEY_PREFIX = "streak_milestone_shown_";
 
 export function SubmissionForm({
   dailyRoundId,
@@ -66,27 +96,50 @@ export function SubmissionForm({
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [streak, setStreak] = useState<number | null>(null);
+  const [isMilestone, setIsMilestone] = useState(false);
   const [isFinalized, setIsFinalized] = useState(!!finalizedAt);
   const [result, setResult] = useState<Evaluation | null>(evaluation);
+  const [activePage, setActivePage] = useState(() =>
+    Math.max(0, splitPages(initialContent).length - 1),
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 노트 페이지처럼 글이 길어질수록 입력창도 아래로 늘어나게 함 (스크롤에 갇히지 않도록)
-  function autoResize(el: HTMLTextAreaElement) {
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }
+  const pages = splitPages(content);
+  const currentPage = Math.min(activePage, pages.length - 1);
 
   useEffect(() => {
-    if (textareaRef.current) autoResize(textareaRef.current);
-  }, []);
+    textareaRef.current?.focus();
+  }, [currentPage]);
+
+  function handlePageInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const nextPages = [...pages];
+    nextPages[currentPage] = e.target.value;
+    setContent(nextPages.join("").slice(0, 2000));
+    if (e.target.value.length >= PAGE_CAPACITY && currentPage === pages.length - 1) {
+      setActivePage(currentPage + 1);
+    }
+  }
 
   function handleSave() {
     setError(null);
     startTransition(async () => {
       try {
-        await saveSubmission(dailyRoundId, content);
+        const { streak: streakInfo } = await saveSubmission(dailyRoundId, content);
         setSavedAt(new Date().toLocaleTimeString("ko-KR"));
+        setStreak(streakInfo.currentStreak);
+
+        const milestoneKey = `${STREAK_SHOWN_KEY_PREFIX}${todayKst()}`;
+        const alreadyCelebratedToday = localStorage.getItem(milestoneKey) === "1";
+        const hitMilestone =
+          STREAK_MILESTONES.includes(streakInfo.currentStreak) && !alreadyCelebratedToday;
+        setIsMilestone(hitMilestone);
+
         fireSuccessConfetti();
+        if (hitMilestone) {
+          fireStreakConfetti();
+          localStorage.setItem(milestoneKey, "1");
+        }
         setShowSuccess(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : "저장에 실패했습니다.");
@@ -167,22 +220,44 @@ export function SubmissionForm({
         나의 문장
       </span>
       <textarea
+        key={currentPage}
         ref={textareaRef}
-        value={content}
-        onChange={(e) => {
-          setContent(e.target.value);
-          autoResize(e.target);
-        }}
-        maxLength={2000}
-        rows={6}
-        aria-label="나의 문장 입력"
-        placeholder="이 상황을 나만의 문체로 다시 써보세요."
-        className="w-full resize-none rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)]"
+        value={pages[currentPage] ?? ""}
+        onChange={handlePageInput}
+        maxLength={PAGE_CAPACITY}
+        aria-label={`나의 문장 입력 (${currentPage + 1}페이지)`}
+        placeholder={
+          currentPage === 0 ? "이 상황을 나만의 문체로 다시 써보세요." : "이어서 쓰세요."
+        }
+        className="page-flip h-40 w-full resize-none overflow-hidden rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)] sm:h-48"
       />
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between gap-4">
         <span className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
           {Array.from(content).length}자
         </span>
+        {pages.length > 1 && (
+          <div className="flex items-center gap-3 font-sans text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+            <button
+              type="button"
+              onClick={() => setActivePage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              ‹ 이전 페이지
+            </button>
+            <span className="font-mono">
+              {currentPage + 1} / {pages.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setActivePage((p) => Math.min(pages.length - 1, p + 1))}
+              disabled={currentPage === pages.length - 1}
+              className="disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              다음 페이지 ›
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-6">
@@ -233,6 +308,8 @@ export function SubmissionForm({
         open={showSuccess}
         content={content}
         onClose={() => setShowSuccess(false)}
+        streak={streak}
+        isMilestone={isMilestone}
       />
     </section>
   );
