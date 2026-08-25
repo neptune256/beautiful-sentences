@@ -17,6 +17,11 @@ const MYPAGE_TAB: Tab = { href: "/mypage", label: "마이페이지", rotate: "-1
 
 export function PostitNav({ loggedIn }: { loggedIn: boolean }) {
   const pathname = usePathname();
+
+  // /board는 노트 밖의 코르크보드라 페이지 인덱스 탭(포스트잇 형식) 대신
+  // 보드 상단의 "노트로 돌아가기" 버튼으로 이동한다.
+  if (pathname?.startsWith("/board")) return null;
+
   const tabs = loggedIn ? [...TABS, MYPAGE_TAB] : TABS;
 
   return (

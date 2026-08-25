@@ -3,8 +3,9 @@
 import { usePathname } from "next/navigation";
 import { NotebookShell } from "@/components/notebook-shell";
 
-// /board는 자유 배치 코르크보드라 노트 페이지의 좁은 폭·overflow-hidden 클리핑과 맞지 않아
-// 노트 프레임 없이 전체 화면을 쓴다. 그 외 페이지는 기존 노트 페이지 그대로.
+// /board는 코르크보드에 포스트잇을 붙이는 느낌이라 노트 페이지의 좁은 폭이나 여백과 맞지 않아
+// 노트 프레임 없이 화면 전체(=책상 표면)를 보드로 쓰고, 메뉴/설명은 위쪽 얇은 바에 둔다.
+// 그 외 페이지는 기존 노트 페이지 그대로.
 export function PageChrome({
   nav,
   children,
@@ -17,9 +18,9 @@ export function PageChrome({
 
   if (isBoard) {
     return (
-      <div className="w-full max-w-6xl">
-        {nav}
-        <div className="mt-4">{children}</div>
+      <div className="desk-surface fixed inset-0 z-0 flex flex-col overflow-hidden">
+        <div className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-5">{nav}</div>
+        <div className="min-h-0 flex-1">{children}</div>
       </div>
     );
   }

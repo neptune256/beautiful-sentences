@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getAnonToken } from "@/lib/anon-token";
 import {
@@ -161,32 +162,37 @@ export function BoardCanvas({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-3 px-4 pb-3 sm:px-6">
         <div>
           <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--paper-cream)_85%,#fff)]">
             자유 게시판
           </span>
-          <h1 className="font-serif text-xl text-[var(--paper-cream)]">
-            코르크보드에 자유롭게 붙여 보세요.
+          <h1 className="font-serif text-lg text-[var(--paper-cream)]">
+            책상 위에 자유롭게 붙여 보세요.
           </h1>
           <p className="mt-1 font-sans text-xs text-[color-mix(in_srgb,var(--paper-cream)_75%,transparent)]">
             글은 24시간 뒤 사라져요. 좋아요를 받으면 24시간이 다시 채워져요.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCompose}
-          className="rounded-full bg-[var(--stamp-red)] px-5 py-2.5 font-sans text-sm font-bold text-[var(--paper-cream)] shadow-lg transition-transform hover:scale-105"
-        >
-          + 새 글쓰기
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="rounded-full border border-[color-mix(in_srgb,var(--paper-cream)_50%,transparent)] px-4 py-2.5 font-sans text-sm font-bold text-[var(--paper-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--paper-cream)_12%,transparent)]"
+          >
+            ← 노트로 돌아가기
+          </Link>
+          <button
+            type="button"
+            onClick={openCompose}
+            className="rounded-full bg-[var(--stamp-red)] px-5 py-2.5 font-sans text-sm font-bold text-[var(--paper-cream)] shadow-lg transition-transform hover:scale-105"
+          >
+            + 새 글쓰기
+          </button>
+        </div>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="manuscript-bg relative h-[75vh] w-full overflow-auto rounded-sm border border-[var(--paper-grid)] shadow-[inset_0_2px_10px_rgba(0,0,0,0.25)]"
-      >
+      <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-auto">
         <div className="relative" style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
           {posts.map((post) => (
             <BoardNote
