@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { evaluateSubmissions } from "@/lib/gemini";
+import { logGeminiUsage } from "@/lib/gemini-usage";
 import { todayKst } from "@/lib/date";
 import { NextResponse } from "next/server";
 
@@ -79,10 +80,11 @@ async function closeRound(
   let evaluated = false;
   try {
     const entries = submissions.map((s, i) => ({ index: i + 1, content: s.content }));
-    const { winnerIndex, reasoning, results } = await evaluateSubmissions(
+    const { winnerIndex, reasoning, results, usage } = await evaluateSubmissions(
       situationContent ?? "",
       entries,
     );
+    await logGeminiUsage(supabase, round.id, usage);
     const winner = submissions[winnerIndex - 1];
 
     if (winner) {

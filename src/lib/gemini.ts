@@ -16,10 +16,18 @@ type EntryResult = {
   note: string;
 };
 
+type TokenUsage = {
+  model: string;
+  promptTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+};
+
 type EvaluationResult = {
   winnerIndex: number;
   reasoning: string;
   results: EntryResult[];
+  usage: TokenUsage;
 };
 
 export async function evaluateSubmissions(
@@ -123,7 +131,15 @@ async function callGemini(
     }),
   );
 
-  return { winnerIndex: parsed.winner_index, reasoning: parsed.reasoning, results };
+  const usageMetadata = data.usageMetadata ?? {};
+  const usage: TokenUsage = {
+    model,
+    promptTokens: usageMetadata.promptTokenCount ?? 0,
+    outputTokens: usageMetadata.candidatesTokenCount ?? 0,
+    totalTokens: usageMetadata.totalTokenCount ?? 0,
+  };
+
+  return { winnerIndex: parsed.winner_index, reasoning: parsed.reasoning, results, usage };
 }
 
 function buildPrompt(situation: string, entries: Entry[]) {

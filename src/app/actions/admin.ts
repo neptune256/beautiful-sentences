@@ -177,6 +177,60 @@ export async function updateSentenceContent(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function updateGeminiBudget(formData: FormData) {
+  await requireAdmin();
+
+  const amount = Number(formData.get("amount_usd"));
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error("올바른 금액을 입력해주세요.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("gemini_credit_budget")
+    .update({ amount_usd: amount, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function upsertGeminiPricing(formData: FormData) {
+  await requireAdmin();
+
+  const model = formData.get("model");
+  const inputPrice = Number(formData.get("input_price_per_million"));
+  const outputPrice = Number(formData.get("output_price_per_million"));
+
+  if (
+    typeof model !== "string" ||
+    model.trim().length === 0 ||
+    !Number.isFinite(inputPrice) ||
+    inputPrice < 0 ||
+    !Number.isFinite(outputPrice) ||
+    outputPrice < 0
+  ) {
+    throw new Error("올바른 모델명과 단가를 입력해주세요.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("gemini_model_pricing").upsert({
+    model: model.trim(),
+    input_price_per_million: inputPrice,
+    output_price_per_million: outputPrice,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+}
+
 export async function addToPool(formData: FormData) {
   await requireAdmin();
 
