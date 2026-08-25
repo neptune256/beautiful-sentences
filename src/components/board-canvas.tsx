@@ -34,7 +34,7 @@ export function BoardCanvas({
   currentUser,
 }: {
   initialPosts: BoardPost[];
-  currentUser: { id: string; nickname: string } | null;
+  currentUser: { id: string; nickname: string; isAdmin: boolean } | null;
 }) {
   const [posts, setPosts] = useState<BoardPost[]>(initialPosts);
   const [anonToken, setAnonToken] = useState("");
@@ -96,6 +96,7 @@ export function BoardCanvas({
   const selectedPost = posts.find((p) => p.id === selectedPostId) ?? null;
 
   function isOwner(post: BoardPost) {
+    if (currentUser?.isAdmin) return true;
     if (currentUser) return post.user_id === currentUser.id;
     return !!anonToken && post.anon_token === anonToken;
   }

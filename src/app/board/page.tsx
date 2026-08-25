@@ -16,14 +16,18 @@ export default async function BoardPage() {
       .order("created_at", { ascending: true }),
   ]);
 
-  let currentUser: { id: string; nickname: string } | null = null;
+  let currentUser: { id: string; nickname: string; isAdmin: boolean } | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("nickname")
+      .select("nickname, is_admin")
       .eq("id", user.id)
       .single();
-    currentUser = { id: user.id, nickname: profile?.nickname ?? "익명" };
+    currentUser = {
+      id: user.id,
+      nickname: profile?.nickname ?? "익명",
+      isAdmin: profile?.is_admin ?? false,
+    };
   }
 
   return (

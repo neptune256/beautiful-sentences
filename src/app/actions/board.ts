@@ -57,11 +57,15 @@ async function currentProfile() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nickname")
+    .select("nickname, is_admin")
     .eq("id", user.id)
     .single();
 
-  return { id: user.id, nickname: profile?.nickname ?? "익명" };
+  return {
+    id: user.id,
+    nickname: profile?.nickname ?? "익명",
+    isAdmin: profile?.is_admin ?? false,
+  };
 }
 
 export async function createBoardPost(params: {
@@ -159,9 +163,11 @@ export async function moveBoardPost(
   const admin = createAdminClient();
 
   let query = admin.from("board_posts").update({ x, y }).eq("id", postId);
-  query = profile
-    ? query.eq("user_id", profile.id)
-    : query.eq("anon_token", anonToken ?? "");
+  if (!profile?.isAdmin) {
+    query = profile
+      ? query.eq("user_id", profile.id)
+      : query.eq("anon_token", anonToken ?? "");
+  }
 
   const { data, error } = await query.select("id");
   if (error) throw new Error(error.message);
@@ -173,9 +179,11 @@ export async function deleteBoardPost(postId: string, anonToken: string | null) 
   const admin = createAdminClient();
 
   let query = admin.from("board_posts").delete().eq("id", postId);
-  query = profile
-    ? query.eq("user_id", profile.id)
-    : query.eq("anon_token", anonToken ?? "");
+  if (!profile?.isAdmin) {
+    query = profile
+      ? query.eq("user_id", profile.id)
+      : query.eq("anon_token", anonToken ?? "");
+  }
 
   const { data, error } = await query.select("id");
   if (error) throw new Error(error.message);
