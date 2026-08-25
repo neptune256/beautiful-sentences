@@ -13,7 +13,7 @@ import {
   upsertGeminiPricing,
 } from "@/app/actions/admin";
 
-const HISTORY_PAGE_SIZE = 10;
+const HISTORY_PAGE_SIZE = 3;
 
 const TABS = [
   { key: "sentences", label: "문장 관리" },
@@ -546,23 +546,24 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                           text={h.winnerContent}
                           clampLines={4}
                           className="mt-1 text-black/70"
-                        />
-                      )}
-                      {h.winnerScores && (
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-black/60">
-                          {(Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[]).map(
-                            (key) => (
-                              <span key={key}>
-                                {CRITERION_LABELS[key]} {h.winnerScores![key]}
+                        >
+                          {h.winnerScores && (
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-black/60">
+                              {(
+                                Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[]
+                              ).map((key) => (
+                                <span key={key}>
+                                  {CRITERION_LABELS[key]} {h.winnerScores![key]}
+                                </span>
+                              ))}
+                              <span className="font-semibold text-black">
+                                총점 {totalScore(h.winnerScores)}/50
                               </span>
-                            ),
+                            </div>
                           )}
-                          <span className="font-semibold text-black">
-                            총점 {totalScore(h.winnerScores)}/50
-                          </span>
-                        </div>
+                          {h.reasoning && <p className="mt-2 text-black/50">{h.reasoning}</p>}
+                        </ExpandableText>
                       )}
-                      {h.reasoning && <p className="mt-2 text-black/50">{h.reasoning}</p>}
                     </div>
                   ) : (
                     <p className="text-xs text-black/40">
