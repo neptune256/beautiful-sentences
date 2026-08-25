@@ -14,6 +14,17 @@ import {
 
 const HISTORY_PAGE_SIZE = 10;
 
+const TABS = [
+  { key: "sentences", label: "문장 관리" },
+  { key: "credit", label: "Gemini 크레딧" },
+  { key: "history", label: "과거 이력" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
+function singleParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function AdminPage(props: PageProps<"/admin">) {
   const supabase = await createClient();
   const {
@@ -28,17 +39,17 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     return (
       <div className="space-y-6">
         <div>
-          <p className="text-sm text-black/50 dark:text-white/50">관리자 전용</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-            Ivy 대시보드
-          </h1>
+          <p className="text-sm text-black/50">관리자 전용</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Ivy 대시보드</h1>
         </div>
-        <p className="text-black/70 dark:text-white/70">
-          관리자만 접근할 수 있습니다.
-        </p>
+        <p className="text-black/70">관리자만 접근할 수 있습니다.</p>
       </div>
     );
   }
+
+  const searchParams = await props.searchParams;
+  const tabParam = singleParam(searchParams.tab);
+  const tab: TabKey = TABS.some((t) => t.key === tabParam) ? (tabParam as TabKey) : "sentences";
 
   const admin = createAdminClient();
   const [
@@ -85,13 +96,9 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const remainingUsd = budgetUsd - spentUsd;
   const hasPricingForCurrentModel = (pricing ?? []).some((p) => p.model === currentModel);
 
-  const { historyPage: historyPageParam } = await props.searchParams;
   const requestedHistoryPage = Math.max(
     1,
-    parseInt(
-      Array.isArray(historyPageParam) ? historyPageParam[0] : (historyPageParam ?? "1"),
-      10,
-    ) || 1,
+    parseInt(singleParam(searchParams.historyPage) ?? "1", 10) || 1,
   );
 
   const { count: closedRoundsCount } = await admin
@@ -107,14 +114,17 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const historyFrom = (historyPage - 1) * HISTORY_PAGE_SIZE;
   const historyTo = historyFrom + HISTORY_PAGE_SIZE - 1;
 
-  const { data: historyRoundsRaw } = await admin
-    .from("daily_rounds")
-    .select(
-      "id, round_date, situation_sentences(content), evaluations(reasoning, submissions(content, profiles(nickname)))",
-    )
-    .eq("status", "closed")
-    .order("round_date", { ascending: false })
-    .range(historyFrom, historyTo);
+  const { data: historyRoundsRaw } =
+    tab === "history"
+      ? await admin
+          .from("daily_rounds")
+          .select(
+            "id, round_date, situation_sentences(content), evaluations(reasoning, submissions(content, profiles(nickname)))",
+          )
+          .eq("status", "closed")
+          .order("round_date", { ascending: false })
+          .range(historyFrom, historyTo)
+      : { data: [] };
 
   const history = await Promise.all(
     (historyRoundsRaw ?? []).map(async (r) => {
@@ -151,435 +161,406 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
-        <p className="text-sm text-black/50 dark:text-white/50">관리자 전용</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          Ivy 대시보드
-        </h1>
+        <p className="text-sm text-black/50">관리자 전용</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Ivy 대시보드</h1>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-baseline justify-between">
-          <p className="text-sm font-semibold">제안 승인 대기 ({pending?.length ?? 0})</p>
-          <p className="text-sm text-black/50 dark:text-white/50">
-            남은 풀 문장: {pool?.length ?? 0}개
-          </p>
-        </div>
+      <nav className="flex gap-1 border-b border-black/10">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={t.key === "sentences" ? "/admin" : `/admin?tab=${t.key}`}
+            className={`-mb-px rounded-t-md border-b-2 px-4 py-2 text-sm font-semibold ${
+              tab === t.key
+                ? "border-black text-black"
+                : "border-transparent text-black/50 hover:text-black"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
 
-        {pending && pending.length > 0 ? (
-          <ul className="space-y-3">
-            {pending.map((p) => {
-              const profileInfo = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
-              return (
-                <li
-                  key={p.id}
-                  className="rounded-lg border border-black/10 p-4 dark:border-white/10"
-                >
-                  <p className="text-xs text-black/50 dark:text-white/50">
-                    {profileInfo?.nickname ?? "익명"}
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">
-                    {p.content}
-                  </p>
-                  <div className="mt-3 flex gap-2">
-                    <form action={approveProposal}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <button
-                        type="submit"
-                        className="rounded-full bg-black px-3 py-1 text-xs text-white dark:bg-white dark:text-black"
-                      >
-                        승인
-                      </button>
-                    </form>
-                    <form action={rejectProposal}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <button
-                        type="submit"
-                        className="rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
-                      >
-                        반려
-                      </button>
-                    </form>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-black/50 dark:text-white/50">
-            승인 대기 중인 제안이 없습니다.
-          </p>
-        )}
-      </div>
+      {tab === "sentences" && (
+        <div className="space-y-10">
+          <div className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <p className="text-sm font-semibold">제안 승인 대기 ({pending?.length ?? 0})</p>
+              <p className="text-sm text-black/50">남은 풀 문장: {pool?.length ?? 0}개</p>
+            </div>
 
-      <div className="space-y-4">
-        <p className="text-sm font-semibold">다음 순서 (대기열, {queue?.length ?? 0}개)</p>
-        {queue && queue.length > 0 ? (
-          <ol className="space-y-2">
-            {queue.map((q, i) => {
-              const profileInfo = Array.isArray(q.profiles) ? q.profiles[0] : q.profiles;
-              return (
-                <li
-                  key={q.id}
-                  className="space-y-2 rounded-lg border border-black/10 p-3 dark:border-white/10"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-black/50 dark:text-white/50">
-                      {i + 1}순위 · {profileInfo?.nickname ?? "풀"}
-                    </p>
-                    <div className="flex shrink-0 gap-1">
-                      <form action={moveQueueItem}>
+            {pending && pending.length > 0 ? (
+              <ul className="space-y-3">
+                {pending.map((p) => {
+                  const profileInfo = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                  return (
+                    <li key={p.id} className="rounded-lg border border-black/10 p-4">
+                      <p className="text-xs text-black/50">{profileInfo?.nickname ?? "익명"}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">
+                        {p.content}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <form action={approveProposal}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full bg-black px-3 py-1 text-xs text-white"
+                          >
+                            승인
+                          </button>
+                        </form>
+                        <form action={rejectProposal}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-black/10 px-3 py-1 text-xs"
+                          >
+                            반려
+                          </button>
+                        </form>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-black/50">승인 대기 중인 제안이 없습니다.</p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm font-semibold">다음 순서 (대기열, {queue?.length ?? 0}개)</p>
+            {queue && queue.length > 0 ? (
+              <ol className="space-y-2">
+                {queue.map((q, i) => {
+                  const profileInfo = Array.isArray(q.profiles) ? q.profiles[0] : q.profiles;
+                  return (
+                    <li key={q.id} className="space-y-2 rounded-lg border border-black/10 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-black/50">
+                          {i + 1}순위 · {profileInfo?.nickname ?? "풀"}
+                        </p>
+                        <div className="flex shrink-0 gap-1">
+                          <form action={moveQueueItem}>
+                            <input type="hidden" name="id" value={q.id} />
+                            <input type="hidden" name="direction" value="up" />
+                            <button
+                              type="submit"
+                              disabled={i === 0}
+                              className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30"
+                            >
+                              위로
+                            </button>
+                          </form>
+                          <form action={moveQueueItem}>
+                            <input type="hidden" name="id" value={q.id} />
+                            <input type="hidden" name="direction" value="down" />
+                            <button
+                              type="submit"
+                              disabled={i === queue.length - 1}
+                              className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30"
+                            >
+                              아래로
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                      <form action={updateSentenceContent} className="flex gap-2">
                         <input type="hidden" name="id" value={q.id} />
-                        <input type="hidden" name="direction" value="up" />
+                        <input
+                          type="text"
+                          name="content"
+                          defaultValue={q.content}
+                          className="flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30"
+                        />
                         <button
                           type="submit"
-                          disabled={i === 0}
-                          className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                          className="shrink-0 rounded-full border border-black/10 px-3 py-1 text-xs"
                         >
-                          위로
+                          저장
                         </button>
                       </form>
-                      <form action={moveQueueItem}>
-                        <input type="hidden" name="id" value={q.id} />
-                        <input type="hidden" name="direction" value="down" />
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="text-sm text-black/50">대기열이 비어 있습니다.</p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm font-semibold">
+              사전 제작 풀 ({pool?.length ?? 0}개) — 대기열이 비면 이 순서대로 사용돼요
+            </p>
+            {pool && pool.length > 0 ? (
+              <ol className="space-y-2">
+                {pool.map((p, i) => (
+                  <li key={p.id} className="space-y-2 rounded-lg border border-black/10 p-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-black/40">{i + 1}.</span>
+                      <form action={moveToQueue} className="shrink-0">
+                        <input type="hidden" name="id" value={p.id} />
                         <button
                           type="submit"
-                          disabled={i === queue.length - 1}
-                          className="rounded-full border border-black/10 px-2 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                          className="rounded-full border border-black/10 px-2 py-1 text-xs"
                         >
-                          아래로
+                          대기열로 이동
                         </button>
                       </form>
                     </div>
-                  </div>
-                  <form action={updateSentenceContent} className="flex gap-2">
-                    <input type="hidden" name="id" value={q.id} />
-                    <input
-                      type="text"
-                      name="content"
-                      defaultValue={q.content}
-                      className="flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-                    />
-                    <button
-                      type="submit"
-                      className="shrink-0 rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
-                    >
-                      저장
-                    </button>
-                  </form>
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <p className="text-sm text-black/50 dark:text-white/50">
-            대기열이 비어 있습니다.
-          </p>
-        )}
-      </div>
+                    <form action={updateSentenceContent} className="flex gap-2">
+                      <input type="hidden" name="id" value={p.id} />
+                      <input
+                        type="text"
+                        name="content"
+                        defaultValue={p.content}
+                        className="flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30"
+                      />
+                      <button
+                        type="submit"
+                        className="shrink-0 rounded-full border border-black/10 px-3 py-1 text-xs"
+                      >
+                        저장
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-sm text-black/50">풀에 등록된 문장이 없습니다.</p>
+            )}
+          </div>
 
-      <div className="space-y-4">
-        <p className="text-sm font-semibold">
-          사전 제작 풀 ({pool?.length ?? 0}개) — 대기열이 비면 이 순서대로 사용돼요
-        </p>
-        {pool && pool.length > 0 ? (
-          <ol className="space-y-2">
-            {pool.map((p, i) => (
-              <li
-                key={p.id}
-                className="space-y-2 rounded-lg border border-black/10 p-3 text-sm dark:border-white/10"
+          <div className="space-y-3">
+            <p className="text-sm font-semibold">문장 풀에 추가</p>
+            <form action={addToPool} className="flex gap-2">
+              <input
+                type="text"
+                name="content"
+                placeholder="상황 문장을 입력하세요"
+                className="flex-1 rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30"
+              />
+              <button
+                type="submit"
+                className="rounded-full bg-black px-4 py-2 text-sm text-white"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-black/40 dark:text-white/40">
-                    {i + 1}.
-                  </span>
-                  <form action={moveToQueue} className="shrink-0">
-                    <input type="hidden" name="id" value={p.id} />
-                    <button
-                      type="submit"
-                      className="rounded-full border border-black/10 px-2 py-1 text-xs dark:border-white/10"
-                    >
-                      대기열로 이동
-                    </button>
-                  </form>
-                </div>
-                <form action={updateSentenceContent} className="flex gap-2">
-                  <input type="hidden" name="id" value={p.id} />
-                  <input
-                    type="text"
-                    name="content"
-                    defaultValue={p.content}
-                    className="flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-                  />
-                  <button
-                    type="submit"
-                    className="shrink-0 rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
-                  >
-                    저장
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-sm text-black/50 dark:text-white/50">
-            풀에 등록된 문장이 없습니다.
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <p className="text-sm font-semibold">Gemini API 크레딧 (추정치)</p>
-        <div className="space-y-2 rounded-lg border border-black/10 p-4 dark:border-white/10">
-          <div className="flex items-baseline justify-between">
-            <p className="text-2xl font-semibold">${remainingUsd.toFixed(2)}</p>
-            <p className="text-xs text-black/50 dark:text-white/50">
-              / ${budgetUsd.toFixed(2)} 중 남음
-            </p>
+                추가
+              </button>
+            </form>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-            <div
-              className="h-full bg-black dark:bg-white"
-              style={{
-                width: `${budgetUsd > 0 ? Math.min(100, (spentUsd / budgetUsd) * 100) : 0}%`,
-              }}
-            />
-          </div>
-          <p className="text-xs text-black/50 dark:text-white/50">
-            누적 사용 ${spentUsd.toFixed(4)} · 호출 {usageLog?.length ?? 0}회 · 토큰{" "}
-            {totalTokens.toLocaleString()}개
-          </p>
-          {!hasPricingForCurrentModel && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              현재 모델({currentModel})의 단가가 등록되지 않아 최근 사용분은 비용이 0으로
-              집계돼요. 아래에서 단가를 입력해주세요.
-            </p>
-          )}
-          <p className="text-xs text-black/40 dark:text-white/40">
-            구글이 API 키 단위 실시간 크레딧 조회를 제공하지 않아, 응답 토큰 수 × 아래 단가로
-            추정한 값이에요. 실제 청구액과 오차가 있을 수 있습니다.
-          </p>
-          <form action={updateGeminiBudget} className="flex items-center gap-2 pt-2">
-            <span className="text-xs text-black/50 dark:text-white/50">
-              구매한 크레딧 총액(USD)
-            </span>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              name="amount_usd"
-              defaultValue={budgetUsd}
-              className="w-28 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-            />
-            <button
-              type="submit"
-              className="rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
-            >
-              저장
-            </button>
-          </form>
         </div>
+      )}
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-black/50 dark:text-white/50">
-            모델별 단가 (백만 토큰당 USD)
-          </p>
-          {pricing && pricing.length > 0 && (
-            <ul className="space-y-2">
-              {pricing.map((p) => (
-                <li
-                  key={p.model}
-                  className="rounded-lg border border-black/10 p-3 dark:border-white/10"
-                >
-                  <form
-                    action={upsertGeminiPricing}
-                    className="flex flex-wrap items-center gap-2 text-sm"
+      {tab === "credit" && (
+        <div className="space-y-4">
+          <div className="space-y-2 rounded-lg border border-black/10 p-4">
+            <div className="flex items-baseline justify-between">
+              <p className="text-2xl font-semibold">${remainingUsd.toFixed(2)}</p>
+              <p className="text-xs text-black/50">/ ${budgetUsd.toFixed(2)} 중 남음</p>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-black/10">
+              <div
+                className="h-full bg-black"
+                style={{
+                  width: `${budgetUsd > 0 ? Math.min(100, (spentUsd / budgetUsd) * 100) : 0}%`,
+                }}
+              />
+            </div>
+            <p className="text-xs text-black/50">
+              누적 사용 ${spentUsd.toFixed(4)} · 호출 {usageLog?.length ?? 0}회 · 토큰{" "}
+              {totalTokens.toLocaleString()}개
+            </p>
+            {!hasPricingForCurrentModel && (
+              <p className="text-xs text-amber-700">
+                현재 모델({currentModel})의 단가가 등록되지 않아 최근 사용분은 비용이 0으로
+                집계돼요. 아래에서 단가를 입력해주세요.
+              </p>
+            )}
+            <p className="text-xs text-black/40">
+              구글이 API 키 단위 실시간 크레딧 조회를 제공하지 않아, 응답 토큰 수 × 아래 단가로
+              추정한 값이에요. 실제 청구액과 오차가 있을 수 있습니다.
+            </p>
+            <form action={updateGeminiBudget} className="flex items-center gap-2 pt-2">
+              <span className="text-xs text-black/50">구매한 크레딧 총액(USD)</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="amount_usd"
+                defaultValue={budgetUsd}
+                className="w-28 rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm outline-none focus:border-black/30"
+              />
+              <button
+                type="submit"
+                className="rounded-full border border-black/10 px-3 py-1 text-xs"
+              >
+                저장
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-black/50">모델별 단가 (백만 토큰당 USD)</p>
+            {pricing && pricing.length > 0 && (
+              <ul className="space-y-2">
+                {pricing.map((p) => (
+                  <li key={p.model} className="rounded-lg border border-black/10 p-3">
+                    <form
+                      action={upsertGeminiPricing}
+                      className="flex flex-wrap items-center gap-2 text-sm"
+                    >
+                      <input type="hidden" name="model" value={p.model} />
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{p.model}</span>
+                      <span className="text-xs text-black/50">입력</span>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        name="input_price_per_million"
+                        defaultValue={p.input_price_per_million}
+                        className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30"
+                      />
+                      <span className="text-xs text-black/50">출력</span>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        name="output_price_per_million"
+                        defaultValue={p.output_price_per_million}
+                        className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30"
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-full border border-black/10 px-3 py-1 text-xs"
+                      >
+                        저장
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <form
+              action={upsertGeminiPricing}
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-black/20 p-3 text-sm"
+            >
+              <input
+                type="text"
+                name="model"
+                placeholder={`모델명 (예: ${currentModel})`}
+                className="min-w-0 flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30"
+              />
+              <span className="text-xs text-black/50">입력</span>
+              <input
+                type="number"
+                step="0.0001"
+                min="0"
+                name="input_price_per_million"
+                placeholder="0.00"
+                className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30"
+              />
+              <span className="text-xs text-black/50">출력</span>
+              <input
+                type="number"
+                step="0.0001"
+                min="0"
+                name="output_price_per_million"
+                placeholder="0.00"
+                className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30"
+              />
+              <button type="submit" className="rounded-full bg-black px-3 py-1 text-xs text-white">
+                추가
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-black/50">최근 호출 내역</p>
+            {usageLog && usageLog.length > 0 ? (
+              <ul className="space-y-1 text-xs">
+                {usageLog.slice(0, 10).map((u) => (
+                  <li
+                    key={u.id}
+                    className="flex items-center justify-between gap-2 border-b border-black/5 py-1"
                   >
-                    <input type="hidden" name="model" value={p.model} />
-                    <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                      {p.model}
+                    <span className="text-black/50">
+                      {new Date(u.created_at).toLocaleDateString("ko-KR")}
                     </span>
-                    <span className="text-xs text-black/50 dark:text-white/50">입력</span>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      name="input_price_per_million"
-                      defaultValue={p.input_price_per_million}
-                      className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-                    />
-                    <span className="text-xs text-black/50 dark:text-white/50">출력</span>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      name="output_price_per_million"
-                      defaultValue={p.output_price_per_million}
-                      className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
-                    >
-                      저장
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form
-            action={upsertGeminiPricing}
-            className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-black/20 p-3 text-sm dark:border-white/20"
-          >
-            <input
-              type="text"
-              name="model"
-              placeholder={`모델명 (예: ${currentModel})`}
-              className="min-w-0 flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-            />
-            <span className="text-xs text-black/50 dark:text-white/50">입력</span>
-            <input
-              type="number"
-              step="0.0001"
-              min="0"
-              name="input_price_per_million"
-              placeholder="0.00"
-              className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-            />
-            <span className="text-xs text-black/50 dark:text-white/50">출력</span>
-            <input
-              type="number"
-              step="0.0001"
-              min="0"
-              name="output_price_per_million"
-              placeholder="0.00"
-              className="w-24 rounded-md border border-black/10 bg-transparent px-2 py-1 text-xs outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-            />
-            <button
-              type="submit"
-              className="rounded-full bg-black px-3 py-1 text-xs text-white dark:bg-white dark:text-black"
-            >
-              추가
-            </button>
-          </form>
+                    <span className="min-w-0 flex-1 truncate font-mono">{u.model}</span>
+                    <span className="shrink-0">{u.total_tokens.toLocaleString()} 토큰</span>
+                    <span className="shrink-0">${Number(u.estimated_cost_usd).toFixed(4)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-black/50">아직 기록된 호출이 없습니다.</p>
+            )}
+          </div>
         </div>
+      )}
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-black/50 dark:text-white/50">
-            최근 호출 내역
-          </p>
-          {usageLog && usageLog.length > 0 ? (
-            <ul className="space-y-1 text-xs">
-              {usageLog.slice(0, 10).map((u) => (
-                <li
-                  key={u.id}
-                  className="flex items-center justify-between gap-2 border-b border-black/5 py-1 dark:border-white/5"
-                >
-                  <span className="text-black/50 dark:text-white/50">
-                    {new Date(u.created_at).toLocaleDateString("ko-KR")}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-mono">{u.model}</span>
-                  <span className="shrink-0">{u.total_tokens.toLocaleString()} 토큰</span>
-                  <span className="shrink-0">${Number(u.estimated_cost_usd).toFixed(4)}</span>
+      {tab === "history" && (
+        <div className="space-y-4">
+          <p className="text-sm font-semibold">과거 문장 이력 ({closedRoundsCount ?? 0}일)</p>
+          {history.length > 0 ? (
+            <ul className="space-y-3">
+              {history.map((h) => (
+                <li key={h.id} className="space-y-2 rounded-lg border border-black/10 p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-xs text-black/50">{h.roundDate}</p>
+                    <p className="text-xs text-black/50">참가 {h.submissionCount}명</p>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {h.situationContent}
+                  </p>
+                  {h.winnerNickname ? (
+                    <div className="rounded-md border border-black/10 bg-black/[0.02] p-3 text-xs">
+                      <p className="font-semibold">1위 · {h.winnerNickname}</p>
+                      {h.winnerContent && (
+                        <p className="mt-1 whitespace-pre-wrap text-black/70">
+                          {h.winnerContent}
+                        </p>
+                      )}
+                      {h.reasoning && <p className="mt-1 text-black/50">{h.reasoning}</p>}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-black/40">
+                      평가 결과가 없습니다 (참가자 없음 또는 평가 실패).
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-black/50 dark:text-white/50">
-              아직 기록된 호출이 없습니다.
-            </p>
+            <p className="text-sm text-black/50">아직 마감된 라운드가 없습니다.</p>
+          )}
+
+          {historyTotalPages > 1 && (
+            <nav className="flex items-center justify-center gap-6 text-sm">
+              {historyPage > 1 ? (
+                <Link href={`/admin?tab=history&historyPage=${historyPage - 1}`} className="underline">
+                  ◂ 이전
+                </Link>
+              ) : (
+                <span className="text-black/30">◂ 이전</span>
+              )}
+              <span className="text-xs text-black/50">
+                {historyPage} / {historyTotalPages}
+              </span>
+              {historyPage < historyTotalPages ? (
+                <Link href={`/admin?tab=history&historyPage=${historyPage + 1}`} className="underline">
+                  다음 ▸
+                </Link>
+              ) : (
+                <span className="text-black/30">다음 ▸</span>
+              )}
+            </nav>
           )}
         </div>
-      </div>
-
-      <div className="space-y-3">
-        <p className="text-sm font-semibold">문장 풀에 추가</p>
-        <form action={addToPool} className="flex gap-2">
-          <input
-            type="text"
-            name="content"
-            placeholder="상황 문장을 입력하세요"
-            className="flex-1 rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30 dark:border-white/10 dark:focus:border-white/30"
-          />
-          <button
-            type="submit"
-            className="rounded-full bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-          >
-            추가
-          </button>
-        </form>
-      </div>
-
-      <div className="space-y-4">
-        <p className="text-sm font-semibold">
-          과거 문장 이력 ({closedRoundsCount ?? 0}일)
-        </p>
-        {history.length > 0 ? (
-          <ul className="space-y-3">
-            {history.map((h) => (
-              <li
-                key={h.id}
-                className="space-y-2 rounded-lg border border-black/10 p-4 dark:border-white/10"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-xs text-black/50 dark:text-white/50">{h.roundDate}</p>
-                  <p className="text-xs text-black/50 dark:text-white/50">
-                    참가 {h.submissionCount}명
-                  </p>
-                </div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {h.situationContent}
-                </p>
-                {h.winnerNickname ? (
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-3 text-xs dark:border-white/10 dark:bg-white/[0.03]">
-                    <p className="font-semibold">1위 · {h.winnerNickname}</p>
-                    {h.winnerContent && (
-                      <p className="mt-1 whitespace-pre-wrap text-black/70 dark:text-white/70">
-                        {h.winnerContent}
-                      </p>
-                    )}
-                    {h.reasoning && (
-                      <p className="mt-1 text-black/50 dark:text-white/50">{h.reasoning}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-black/40 dark:text-white/40">
-                    평가 결과가 없습니다 (참가자 없음 또는 평가 실패).
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-black/50 dark:text-white/50">
-            아직 마감된 라운드가 없습니다.
-          </p>
-        )}
-
-        {historyTotalPages > 1 && (
-          <nav className="flex items-center justify-center gap-6 text-sm">
-            {historyPage > 1 ? (
-              <Link href={`/admin?historyPage=${historyPage - 1}`} className="underline">
-                ◂ 이전
-              </Link>
-            ) : (
-              <span className="text-black/30 dark:text-white/30">◂ 이전</span>
-            )}
-            <span className="text-xs text-black/50 dark:text-white/50">
-              {historyPage} / {historyTotalPages}
-            </span>
-            {historyPage < historyTotalPages ? (
-              <Link href={`/admin?historyPage=${historyPage + 1}`} className="underline">
-                다음 ▸
-              </Link>
-            ) : (
-              <span className="text-black/30 dark:text-white/30">다음 ▸</span>
-            )}
-          </nav>
-        )}
-      </div>
+      )}
     </div>
   );
 }
