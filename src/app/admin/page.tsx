@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ExpandableText } from "@/components/expandable-text";
 import {
   approveProposal,
   rejectProposal,
@@ -20,6 +21,26 @@ const TABS = [
   { key: "history", label: "과거 이력" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
+
+type CriterionScores = {
+  imagery: number;
+  rhythm: number;
+  resonance: number;
+  density: number;
+  context: number;
+};
+
+const CRITERION_LABELS: Record<keyof CriterionScores, string> = {
+  imagery: "선명도",
+  rhythm: "운율",
+  resonance: "잔향",
+  density: "함축성",
+  context: "맥락",
+};
+
+function totalScore(scores: CriterionScores) {
+  return Object.values(scores).reduce((sum, v) => sum + v, 0);
+}
 
 function singleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -119,7 +140,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       ? await admin
           .from("daily_rounds")
           .select(
-            "id, round_date, situation_sentences(content), evaluations(reasoning, submissions(content, profiles(nickname)))",
+            "id, round_date, situation_sentences(content), evaluations(reasoning, submissions(content, eval_scores, profiles(nickname)))",
           )
           .eq("status", "closed")
           .order("round_date", { ascending: false })
@@ -156,6 +177,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         reasoning: evaluation?.reasoning ?? null,
         winnerNickname: winnerProfile?.nickname ?? null,
         winnerContent: winnerSubmission?.content ?? null,
+        winnerScores: (winnerSubmission?.eval_scores as CriterionScores | null) ?? null,
       };
     }),
   );
@@ -520,11 +542,27 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                     <div className="rounded-md border border-black/10 bg-black/[0.02] p-3 text-xs">
                       <p className="font-semibold">1위 · {h.winnerNickname}</p>
                       {h.winnerContent && (
-                        <p className="mt-1 whitespace-pre-wrap text-black/70">
-                          {h.winnerContent}
-                        </p>
+                        <ExpandableText
+                          text={h.winnerContent}
+                          clampLines={4}
+                          className="mt-1 text-black/70"
+                        />
                       )}
-                      {h.reasoning && <p className="mt-1 text-black/50">{h.reasoning}</p>}
+                      {h.winnerScores && (
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-black/60">
+                          {(Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[]).map(
+                            (key) => (
+                              <span key={key}>
+                                {CRITERION_LABELS[key]} {h.winnerScores![key]}
+                              </span>
+                            ),
+                          )}
+                          <span className="font-semibold text-black">
+                            총점 {totalScore(h.winnerScores)}/50
+                          </span>
+                        </div>
+                      )}
+                      {h.reasoning && <p className="mt-2 text-black/50">{h.reasoning}</p>}
                     </div>
                   ) : (
                     <p className="text-xs text-black/40">
