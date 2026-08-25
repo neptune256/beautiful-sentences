@@ -47,12 +47,17 @@ Next.js 16(App Router) + Supabase + Gemini API + Vercel Cron.
 - `point_transactions` — 포인트 지급 내역 원장
 - `increment_points(uuid, int)` RPC — 포인트 원자적 증가(동시 마감 경쟁 방지용)
 
-## 자동화 — Vercel Cron (매일 UTC 15:00 = KST 00:00, Hobby 플랜이라 최대 1시간 오차 있음)
+## 자동화 — GitHub Actions로 트리거 (매일 UTC 15:00 / 15:05 = KST 00:00 / 00:05)
+
+Vercel Hobby 플랜 내장 크론은 정시 실행을 보장하지 않아(최대 1시간 지연 가능) 걷어내고,
+`.github/workflows/cron-trigger.yml`이 정해진 시각에 API를 직접 `curl`로 호출하는 방식으로 대체함
+(`vercel.json`에는 크론 미등록 — 두 트리거가 겹치면 같은 라운드가 이중 마감/채점될 위험이 있어서 하나만 유지).
+GitHub repo secret `CRON_SECRET`이 Vercel의 `CRON_SECRET` 값과 동일하게 등록돼 있어야 동작함.
 
 - `/api/cron/open-round` — 대기열(queue_position 순) → 풀(created_at 순) → 없으면 휴일, 순으로 오늘 라운드 오픈.
   이미 오늘 라운드가 있으면 스킵(멱등)
 - `/api/cron/close-round` — round_date가 지난 open 라운드를 마감, 참여 +5점,
-  Gemini 평가로 1위 +50점(재시도 3회, 실패해도 마감은 유지)
+  Gemini 평가로 1위 +50점(재시도 3회, 실패해도 마감은 유지). status가 이미 closed면 다시 안 걸리므로 멱등.
 
 ## 페이지 구성
 

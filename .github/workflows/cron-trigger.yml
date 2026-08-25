@@ -1,0 +1,31 @@
+name: Trigger daily round cron
+
+# Vercel Hobby 플랜의 내장 크론은 정시 실행을 보장하지 않아(최대 1시간 지연 가능),
+# 이 워크플로가 정해진 시각에 직접 API를 호출해 대체한다. vercel.json에는 크론을 등록하지 않는다
+# (동시에 두 트리거가 걸리면 같은 라운드를 이중으로 마감/채점할 위험이 있음).
+on:
+  schedule:
+    - cron: "0 15 * * *" # KST 00:00 — 라운드 마감 + 평가
+    - cron: "5 15 * * *" # KST 00:05 — 다음 라운드 오픈
+  workflow_dispatch:
+
+jobs:
+  close-round:
+    if: github.event.schedule == '0 15 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/close-round
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://beautiful-sentences.vercel.app/api/cron/close-round
+
+  open-round:
+    if: github.event.schedule == '5 15 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/open-round
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://beautiful-sentences.vercel.app/api/cron/open-round
