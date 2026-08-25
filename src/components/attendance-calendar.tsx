@@ -102,7 +102,7 @@ export function AttendanceCalendar({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {WEEKDAYS.map((w) => (
           <span
             key={w}
@@ -118,12 +118,12 @@ export function AttendanceCalendar({
           return (
             <div
               key={cell.dateStr}
-              className={`relative flex h-9 flex-col items-center justify-center gap-0 rounded-sm ${
+              className={`relative flex h-11 flex-col items-center justify-center gap-0.5 rounded-sm ${
                 cell.isToday ? "ring-2 ring-[var(--stamp-red)] ring-offset-1 ring-offset-[var(--paper-cream)]" : ""
               }`}
             >
               <span
-                className={`font-mono text-[9px] leading-none ${
+                className={`font-mono text-[10px] leading-none ${
                   cell.isFuture
                     ? "text-[color-mix(in_srgb,var(--ink)_30%,transparent)]"
                     : "text-[color-mix(in_srgb,var(--ink)_60%,transparent)]"
@@ -133,21 +133,21 @@ export function AttendanceCalendar({
               </span>
 
               {cell.isHoliday ? (
-                <span className="font-sans text-[8px] leading-none text-[color-mix(in_srgb,var(--ink)_40%,transparent)]">
+                <span className="font-sans text-[9px] leading-none text-[color-mix(in_srgb,var(--ink)_40%,transparent)]">
                   휴일
                 </span>
               ) : cell.attended ? (
                 <span
                   key={cell.dateStr}
-                  className="stamp-in grid h-4 w-4 place-items-center rounded-full border-2 border-[var(--stamp-red)] font-serif text-[8px] font-bold text-[var(--stamp-red)]"
+                  className="stamp-in grid h-5 w-5 place-items-center rounded-full border-2 border-[var(--stamp-red)] font-serif text-[9px] font-bold text-[var(--stamp-red)]"
                   style={{ transform: "rotate(-10deg)" }}
                 >
                   出
                 </span>
               ) : cell.hasRound && !cell.isFuture ? (
-                <span className="h-4 w-4 rounded-full border border-dashed border-[color-mix(in_srgb,var(--ink)_25%,transparent)]" />
+                <span className="h-5 w-5 rounded-full border border-dashed border-[color-mix(in_srgb,var(--ink)_25%,transparent)]" />
               ) : (
-                <span className="h-4 w-4" />
+                <span className="h-5 w-5" />
               )}
             </div>
           );

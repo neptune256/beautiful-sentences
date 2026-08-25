@@ -40,8 +40,8 @@ export default async function MyPage() {
   ]);
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-col gap-1">
         <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
           마이페이지
         </span>
@@ -50,7 +50,7 @@ export default async function MyPage() {
         </h1>
       </header>
 
-      <section className="flex items-center justify-between rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-4">
+      <section className="-mt-2 flex items-center justify-between rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-3">
         <div className="flex flex-col">
           <span className="font-sans text-xs font-bold tracking-[0.2em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
             누적 포인트
@@ -62,8 +62,8 @@ export default async function MyPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="-mt-2 flex flex-col gap-3 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-sans text-xs font-bold tracking-[0.2em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
             출석 현황
           </span>
@@ -88,7 +88,7 @@ export default async function MyPage() {
         />
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="-mt-2 flex flex-col gap-0.5">
         <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
           닉네임 변경
         </span>
