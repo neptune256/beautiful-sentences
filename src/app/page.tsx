@@ -40,14 +40,32 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   let myContent = "";
+  let myFinalizedAt: string | null = null;
+  let myEvaluation: {
+    passedGate: boolean | null;
+    gateIssue: string | null;
+    scores: { imagery: number; rhythm: number; resonance: number; density: number; context: number } | null;
+    note: string | null;
+  } | null = null;
   if (user) {
     const { data: submission } = await supabase
       .from("submissions")
-      .select("content")
+      .select(
+        "content, finalized_at, eval_passed_gate, eval_gate_issue, eval_scores, eval_note",
+      )
       .eq("daily_round_id", round.id)
       .eq("user_id", user.id)
       .maybeSingle();
     myContent = submission?.content ?? "";
+    myFinalizedAt = submission?.finalized_at ?? null;
+    if (myFinalizedAt) {
+      myEvaluation = {
+        passedGate: submission?.eval_passed_gate ?? null,
+        gateIssue: submission?.eval_gate_issue ?? null,
+        scores: submission?.eval_scores ?? null,
+        note: submission?.eval_note ?? null,
+      };
+    }
   }
 
   return (
@@ -65,7 +83,12 @@ export default async function HomePage() {
       </header>
 
       {user ? (
-        <SubmissionForm dailyRoundId={round.id} initialContent={myContent} />
+        <SubmissionForm
+          dailyRoundId={round.id}
+          initialContent={myContent}
+          finalizedAt={myFinalizedAt}
+          evaluation={myEvaluation}
+        />
       ) : (
         <p className="font-serif text-base leading-relaxed text-[color-mix(in_srgb,var(--ink)_70%,transparent)]">
           로그인하면 이 상황을 나만의 문체로 다시 써서 제출할 수 있어요.
