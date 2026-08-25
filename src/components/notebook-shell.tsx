@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 const HOLES = Array.from({ length: 15 });
 
 // 가로 폭은 기존 그대로(컨테이너 폭 100%) 두고, 세로만 A4 비율(1:1.4142)에 맞춰 늘어난다.
-// 화면보다 노트가 커져도 폭을 줄이거나 스크롤을 만들지 않고, body 쪽에서 overflow-hidden으로
-// 화면 밖으로 나가는 부분을 그대로 잘라낸다.
+// 노트 자체 크기는 줄이지 않되, 화면(특히 모바일/태블릿처럼 세로로 긴 화면)보다 내용이
+// 길어지면 노트 안에서 세로로 스크롤해서 볼 수 있게 한다(마이페이지 출석 달력 등).
 export function NotebookShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -54,7 +54,7 @@ export function NotebookShell({ children }: { children: React.ReactNode }) {
                 />
               ))}
             </div>
-            <div className="relative h-full overflow-hidden">{children}</div>
+            <div className="relative h-full overflow-x-hidden overflow-y-auto">{children}</div>
           </div>
         </div>
 
