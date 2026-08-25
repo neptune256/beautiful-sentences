@@ -40,9 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${notoSerifKR.variable} ${nanumGothicCoding.variable} ${nanumGothic.variable} h-full antialiased`}
+      className={`${notoSerifKR.variable} ${nanumGothicCoding.variable} ${nanumGothic.variable} h-full overflow-hidden antialiased`}
     >
-      <body className="desk-surface flex min-h-full flex-col items-center px-4 py-8 sm:py-16">
+      <body className="desk-surface flex h-dvh flex-col items-center overflow-hidden px-4 py-8 sm:py-16">
         <OnboardingModals />
         <PageChrome nav={<Nav />}>{children}</PageChrome>
       </body>
