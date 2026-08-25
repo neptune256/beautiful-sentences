@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { AuthButton } from "@/components/auth-button";
 import { NicknameSetupModal } from "@/components/nickname-setup-modal";
 import { PostitNav } from "@/components/postit-nav";
+import { computeStreakInfo } from "@/lib/attendance";
+import { todayKst } from "@/lib/date";
 
 export async function Nav() {
   const supabase = await createClient();
@@ -12,14 +14,15 @@ export async function Nav() {
 
   let nickname: string | null = null;
   let needsNicknameSetup = false;
+  let streak = 0;
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("nickname, nickname_set")
-      .eq("id", user.id)
-      .single();
+    const [{ data: profile }, streakInfo] = await Promise.all([
+      supabase.from("profiles").select("nickname, nickname_set").eq("id", user.id).single(),
+      computeStreakInfo(supabase, user.id, todayKst()),
+    ]);
     nickname = profile?.nickname ?? null;
     needsNicknameSetup = profile?.nickname_set === false;
+    streak = streakInfo.currentStreak;
   }
 
   return (
@@ -34,7 +37,7 @@ export async function Nav() {
         >
           아름다운 문장
         </Link>
-        <AuthButton nickname={nickname} />
+        <AuthButton nickname={nickname} streak={streak} />
       </div>
       <PostitNav loggedIn={!!user} />
     </>

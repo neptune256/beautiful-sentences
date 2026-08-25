@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function AuthButton({ nickname }: { nickname: string | null }) {
+export function AuthButton({
+  nickname,
+  streak = 0,
+}: {
+  nickname: string | null;
+  streak?: number;
+}) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -29,8 +35,18 @@ export function AuthButton({ nickname }: { nickname: string | null }) {
   if (nickname) {
     return (
       <div className="flex items-center gap-3 font-sans text-sm">
-        <span className="font-bold text-[color-mix(in_srgb,var(--paper-cream)_92%,#fff)]">
-          {nickname}
+        <span className="flex items-center gap-1.5">
+          <span className="font-bold text-[color-mix(in_srgb,var(--paper-cream)_92%,#fff)]">
+            {nickname}
+          </span>
+          {streak > 0 && (
+            <span
+              aria-label={`연속 출석 ${streak}일째`}
+              className="stamp-in flex items-center gap-0.5 rounded-full bg-[var(--postit-active)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
+            >
+              🔥{streak}
+            </span>
+          )}
         </span>
         <button
           type="button"
