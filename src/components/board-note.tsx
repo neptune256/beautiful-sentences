@@ -77,9 +77,14 @@ export function BoardNote({
       className="w-56 select-none rounded-sm p-4 shadow-[3px_5px_10px_rgba(0,0,0,0.3)]"
     >
       <div className="pointer-events-none flex flex-col gap-2">
-        <p className="line-clamp-6 whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-[var(--ink)]">
-          {post.content}
-        </p>
+        <div
+          className="pointer-events-auto max-h-32 touch-pan-y overflow-y-auto pr-0.5"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <p className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-[var(--ink)]">
+            {post.content}
+          </p>
+        </div>
         <div className="flex items-center justify-between font-sans text-xs text-[color-mix(in_srgb,var(--ink)_65%,transparent)]">
           <span className="font-bold">{post.author_name}</span>
           <span>{hoursLeft !== null ? `${hoursLeft}시간 후 소멸` : ""}</span>
