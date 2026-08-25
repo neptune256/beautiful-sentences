@@ -79,14 +79,15 @@ export function BoardCommentsModal({
             exit={{ opacity: 0, scale: 0.96, y: 6 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            <div className="border-b border-[var(--paper-grid)] p-5">
-              <div className="flex items-center justify-between font-sans text-xs text-[color-mix(in_srgb,var(--ink)_60%,transparent)]">
-                <span className="font-bold">{post.author_name}</span>
-                <button type="button" onClick={onClose} className="hover:text-[var(--stamp-red)]">
-                  닫기 ✕
-                </button>
-              </div>
-              <p className="mt-2 whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-[var(--ink)]">
+            <div className="flex items-center justify-between border-b border-[var(--paper-grid)] px-5 py-3 font-sans text-xs text-[color-mix(in_srgb,var(--ink)_60%,transparent)]">
+              <span className="font-bold">{post.author_name}</span>
+              <button type="button" onClick={onClose} className="hover:text-[var(--stamp-red)]">
+                닫기 ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              <p className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-[var(--ink)]">
                 {post.content}
               </p>
               <button
@@ -96,29 +97,29 @@ export function BoardCommentsModal({
               >
                 ♥ 좋아요 {post.likes_count}
               </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              {loading && (
-                <p className="font-sans text-xs text-[color-mix(in_srgb,var(--ink)_50%,transparent)]">
-                  불러오는 중...
-                </p>
-              )}
-              {!loading && comments.length === 0 && (
-                <p className="font-sans text-xs text-[color-mix(in_srgb,var(--ink)_50%,transparent)]">
-                  아직 댓글이 없어요. 첫 댓글을 남겨 보세요.
-                </p>
-              )}
-              <ul className="flex flex-col gap-3">
-                {comments.map((c) => (
-                  <li key={c.id} className="font-sans text-sm text-[var(--ink)]">
-                    <span className="font-bold">{c.author_name}</span>
-                    <p className="mt-0.5 whitespace-pre-wrap break-words text-[color-mix(in_srgb,var(--ink)_85%,transparent)]">
-                      {c.content}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-5 border-t border-[var(--paper-grid)] pt-4">
+                {loading && (
+                  <p className="font-sans text-xs text-[color-mix(in_srgb,var(--ink)_50%,transparent)]">
+                    불러오는 중...
+                  </p>
+                )}
+                {!loading && comments.length === 0 && (
+                  <p className="font-sans text-xs text-[color-mix(in_srgb,var(--ink)_50%,transparent)]">
+                    아직 댓글이 없어요. 첫 댓글을 남겨 보세요.
+                  </p>
+                )}
+                <ul className="flex flex-col gap-3">
+                  {comments.map((c) => (
+                    <li key={c.id} className="font-sans text-sm text-[var(--ink)]">
+                      <span className="font-bold">{c.author_name}</span>
+                      <p className="mt-0.5 whitespace-pre-wrap break-words text-[color-mix(in_srgb,var(--ink)_85%,transparent)]">
+                        {c.content}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             <div className="border-t border-[var(--paper-grid)] p-4">
