@@ -34,18 +34,6 @@ function totalScore(scores: CriterionScores) {
   return Object.values(scores).reduce((sum, v) => sum + v, 0);
 }
 
-// 노트 한 페이지에 들어갈 만큼만 쓰게 하고, 다 차면 세로로 늘리는 대신 다음 페이지로 넘긴다.
-const PAGE_CAPACITY = 320;
-
-function splitPages(text: string): string[] {
-  if (text.length === 0) return [""];
-  const pages: string[] = [];
-  for (let i = 0; i < text.length; i += PAGE_CAPACITY) {
-    pages.push(text.slice(i, i + PAGE_CAPACITY));
-  }
-  return pages;
-}
-
 // 은은한 골드·브라운 톤 별가루가 화면 양쪽에서 부드럽게 퍼지는 정도로만 터뜨린다.
 function fireSuccessConfetti() {
   const shared: confetti.Options = {
@@ -100,26 +88,17 @@ export function SubmissionForm({
   const [isMilestone, setIsMilestone] = useState(false);
   const [isFinalized, setIsFinalized] = useState(!!finalizedAt);
   const [result, setResult] = useState<Evaluation | null>(evaluation);
-  const [activePage, setActivePage] = useState(() =>
-    Math.max(0, splitPages(initialContent).length - 1),
-  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const pages = splitPages(content);
-  const currentPage = Math.min(activePage, pages.length - 1);
+  // 페이지를 넘기는 대신, 노트 페이지 전체가 그렇듯 글이 길어지면 입력창도 아래로 늘어나게 함.
+  function autoResize(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
 
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, [currentPage]);
-
-  function handlePageInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const nextPages = [...pages];
-    nextPages[currentPage] = e.target.value;
-    setContent(nextPages.join("").slice(0, 2000));
-    if (e.target.value.length >= PAGE_CAPACITY && currentPage === pages.length - 1) {
-      setActivePage(currentPage + 1);
-    }
-  }
+    if (textareaRef.current) autoResize(textareaRef.current);
+  }, []);
 
   function handleSave() {
     setError(null);
@@ -220,44 +199,22 @@ export function SubmissionForm({
         나의 문장
       </span>
       <textarea
-        key={currentPage}
         ref={textareaRef}
-        value={pages[currentPage] ?? ""}
-        onChange={handlePageInput}
-        maxLength={PAGE_CAPACITY}
-        aria-label={`나의 문장 입력 (${currentPage + 1}페이지)`}
-        placeholder={
-          currentPage === 0 ? "이 상황을 나만의 문체로 다시 써보세요." : "이어서 쓰세요."
-        }
-        className="page-flip h-40 w-full resize-none overflow-hidden rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)] sm:h-48"
+        value={content}
+        onChange={(e) => {
+          setContent(e.target.value);
+          autoResize(e.target);
+        }}
+        maxLength={2000}
+        rows={6}
+        aria-label="나의 문장 입력"
+        placeholder="이 상황을 나만의 문체로 다시 써보세요."
+        className="w-full resize-none rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)]"
       />
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
         <span className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
           {Array.from(content).length}자
         </span>
-        {pages.length > 1 && (
-          <div className="flex items-center gap-3 font-sans text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-            <button
-              type="button"
-              onClick={() => setActivePage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-              className="disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              ‹ 이전 페이지
-            </button>
-            <span className="font-mono">
-              {currentPage + 1} / {pages.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => setActivePage((p) => Math.min(pages.length - 1, p + 1))}
-              disabled={currentPage === pages.length - 1}
-              className="disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              다음 페이지 ›
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-6">
