@@ -149,6 +149,41 @@ export async function createWinnerBoardPost(params: {
   return data as BoardPost;
 }
 
+// 다른 기능(예: 세 단어 글쓰기)에서 만든 텍스트를 그대로 자유 게시판에 붙일 때 쓴다.
+// 클릭 좌표가 없으므로 캔버스 내 무작위 위치를 골라 쓴다.
+export async function shareContentToBoard(content: string): Promise<BoardPost> {
+  const trimmed = content.trim();
+  if (!trimmed) throw new Error("내용을 입력해 주세요.");
+
+  const profile = await currentProfile();
+  if (!profile) throw new Error("로그인이 필요합니다.");
+
+  const rotation = Math.random() * 10 - 5;
+  const color = BOARD_COLORS[Math.floor(Math.random() * BOARD_COLORS.length)];
+  const { x, y } = randomBoardPosition();
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("board_posts")
+    .insert({
+      content: trimmed,
+      author_name: profile.nickname,
+      user_id: profile.id,
+      x,
+      y,
+      rotation,
+      color,
+      expires_at: new Date(Date.now() + BOARD_TTL_HOURS * 3600 * 1000).toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/board");
+  return data as BoardPost;
+}
+
 export async function moveBoardPost(
   postId: string,
   x: number,

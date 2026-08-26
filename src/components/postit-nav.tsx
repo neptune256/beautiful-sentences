@@ -8,6 +8,7 @@ type Tab = { href: string; label: string; rotate: string; depth: number };
 const TABS: Tab[] = [
   { href: "/", label: "오늘의 문장", rotate: "-1.5deg", depth: 15 },
   { href: "/yesterday", label: "어제의 결과", rotate: "1.2deg", depth: 20 },
+  { href: "/wordplay", label: "네 단어 글쓰기", rotate: "0.9deg", depth: 18 },
   { href: "/ranking", label: "랭킹", rotate: "-0.8deg", depth: 12 },
   { href: "/propose", label: "문장 제안하기", rotate: "1.6deg", depth: 22 },
   { href: "/board", label: "자유 게시판", rotate: "-1.4deg", depth: 16 },
