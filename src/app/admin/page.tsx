@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ExpandableText } from "@/components/expandable-text";
+import { todayKst } from "@/lib/date";
 import {
   approveProposal,
   rejectProposal,
@@ -11,6 +12,8 @@ import {
   updateSentenceContent,
   updateGeminiBudget,
   upsertGeminiPricing,
+  useSentenceToday,
+  writeSentenceToday,
 } from "@/app/actions/admin";
 
 const HISTORY_PAGE_SIZE = 3;
@@ -73,10 +76,12 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const tab: TabKey = TABS.some((t) => t.key === tabParam) ? (tabParam as TabKey) : "sentences";
 
   const admin = createAdminClient();
+  const today = todayKst();
   const [
     { data: pending },
     { data: queue },
     { data: pool },
+    { data: todayRound },
     { data: budgetRow },
     { data: pricing },
     { data: usageLog },
@@ -96,6 +101,11 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       .select("id, content, created_at")
       .eq("status", "pool")
       .order("created_at", { ascending: true }),
+    admin
+      .from("daily_rounds")
+      .select("id, status, situation_sentences(content)")
+      .eq("round_date", today)
+      .maybeSingle(),
     admin.from("gemini_credit_budget").select("amount_usd").eq("id", 1).single(),
     admin
       .from("gemini_model_pricing")
@@ -107,6 +117,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       .order("created_at", { ascending: false }),
   ]);
 
+  const needsTodaySentence = !todayRound || todayRound.status === "holiday";
   const currentModel = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
   const budgetUsd = Number(budgetRow?.amount_usd ?? 0);
   const spentUsd = (usageLog ?? []).reduce(
@@ -207,6 +218,87 @@ export default async function AdminPage(props: PageProps<"/admin">) {
 
       {tab === "sentences" && (
         <div className="space-y-10">
+          {needsTodaySentence && (
+            <div className="space-y-3 rounded-lg border border-amber-600/40 bg-amber-600/5 p-4">
+              <p className="text-sm font-semibold text-amber-800">
+                {todayRound
+                  ? "오늘은 휴일로 지정돼 있어요 — 대기열/풀이 비어서 자동으로 쉬는 날이 됐어요."
+                  : "오늘의 라운드가 아직 없어요."}{" "}
+                아래에서 문장을 골라 바로 오늘의 문장으로 올릴 수 있어요.
+              </p>
+
+              {queue && queue.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-black/50">대기열에서 선택</p>
+                  <ul className="space-y-1">
+                    {queue.map((q) => (
+                      <li
+                        key={q.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-black/10 bg-white p-2 text-xs"
+                      >
+                        <span className="min-w-0 flex-1 truncate">{q.content}</span>
+                        <form action={useSentenceToday} className="shrink-0">
+                          <input type="hidden" name="id" value={q.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full bg-black px-3 py-1 text-xs text-white"
+                          >
+                            오늘 문장으로
+                          </button>
+                        </form>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {pool && pool.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-black/50">풀에서 선택</p>
+                  <ul className="space-y-1">
+                    {pool.slice(0, 5).map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-black/10 bg-white p-2 text-xs"
+                      >
+                        <span className="min-w-0 flex-1 truncate">{p.content}</span>
+                        <form action={useSentenceToday} className="shrink-0">
+                          <input type="hidden" name="id" value={p.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full bg-black px-3 py-1 text-xs text-white"
+                          >
+                            오늘 문장으로
+                          </button>
+                        </form>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-black/50">
+                  새로 문장을 써서 바로 사용
+                </p>
+                <form action={writeSentenceToday} className="flex gap-2">
+                  <input
+                    type="text"
+                    name="content"
+                    placeholder="오늘의 상황 문장을 입력하세요"
+                    className="flex-1 rounded-md border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-black/30"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full bg-black px-4 py-2 text-sm text-white"
+                  >
+                    오늘 문장으로 사용
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="flex items-baseline justify-between">
               <p className="text-sm font-semibold">제안 승인 대기 ({pending?.length ?? 0})</p>

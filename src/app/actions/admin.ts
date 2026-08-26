@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { todayKst } from "@/lib/date";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -229,6 +230,106 @@ export async function upsertGeminiPricing(formData: FormData) {
   }
 
   revalidatePath("/admin");
+}
+
+// 오늘 라운드가 없거나 휴일로 지정된 경우에만 보충을 허용한다.
+// 이미 진행 중이거나 마감된 라운드를 실수로 덮어써서 참가자 제출을 뒤흔들지 않기 위함.
+async function assertTodayFillable(admin: ReturnType<typeof createAdminClient>) {
+  const today = todayKst();
+  const { data: round } = await admin
+    .from("daily_rounds")
+    .select("id, status")
+    .eq("round_date", today)
+    .maybeSingle();
+
+  if (round && round.status !== "holiday") {
+    throw new Error("오늘 라운드가 이미 진행 중이거나 마감되어 보충할 수 없습니다.");
+  }
+
+  return { today, existingRoundId: round?.id ?? null };
+}
+
+async function applyTodaySentence(
+  admin: ReturnType<typeof createAdminClient>,
+  today: string,
+  existingRoundId: string | null,
+  sentenceId: string,
+) {
+  if (existingRoundId) {
+    const { error } = await admin
+      .from("daily_rounds")
+      .update({ situation_sentence_id: sentenceId, status: "open" })
+      .eq("id", existingRoundId);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await admin
+      .from("daily_rounds")
+      .insert({ round_date: today, situation_sentence_id: sentenceId, status: "open" });
+    if (error) throw new Error(error.message);
+  }
+}
+
+export async function useSentenceToday(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("id");
+  if (typeof id !== "string") {
+    throw new Error("잘못된 요청입니다.");
+  }
+
+  const admin = createAdminClient();
+  const { today, existingRoundId } = await assertTodayFillable(admin);
+
+  const { data: sentence } = await admin
+    .from("situation_sentences")
+    .select("id, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!sentence || (sentence.status !== "queued" && sentence.status !== "pool")) {
+    throw new Error("대기열/풀에 있는 문장만 선택할 수 있습니다.");
+  }
+
+  const { error: updateError } = await admin
+    .from("situation_sentences")
+    .update({ status: "used", used_on: today })
+    .eq("id", id);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  await applyTodaySentence(admin, today, existingRoundId, id);
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
+export async function writeSentenceToday(formData: FormData) {
+  await requireAdmin();
+
+  const content = formData.get("content");
+  if (typeof content !== "string" || content.trim().length === 0) {
+    throw new Error("문장을 입력해주세요.");
+  }
+
+  const admin = createAdminClient();
+  const { today, existingRoundId } = await assertTodayFillable(admin);
+
+  const { data: sentence, error: insertError } = await admin
+    .from("situation_sentences")
+    .insert({ content: content.trim(), status: "used", used_on: today })
+    .select("id")
+    .single();
+
+  if (insertError || !sentence) {
+    throw new Error(insertError?.message ?? "문장 생성에 실패했습니다.");
+  }
+
+  await applyTodaySentence(admin, today, existingRoundId, sentence.id);
+
+  revalidatePath("/admin");
+  revalidatePath("/");
 }
 
 export async function addToPool(formData: FormData) {
