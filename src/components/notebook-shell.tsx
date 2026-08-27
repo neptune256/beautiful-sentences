@@ -54,8 +54,8 @@ export function NotebookShell({ children }: { children: React.ReactNode }) {
                 />
               ))}
             </div>
-            {/* 스크롤바 자체는 노트의 진짜 오른쪽 끝에 붙게 하고, 내용만 안쪽 패딩으로 여백을 준다 */}
-            <div className="relative h-full overflow-x-hidden overflow-y-auto py-8 pl-12 pr-6 sm:py-10 sm:pr-10">
+            {/* 스크롤은 되지만 스크롤바는 안 보이게 하고, 내용만 안쪽 패딩으로 여백을 준다 */}
+            <div className="no-scrollbar relative h-full overflow-x-hidden overflow-y-auto py-8 pl-12 pr-6 sm:py-10 sm:pr-10">
               {children}
             </div>
           </div>

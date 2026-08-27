@@ -194,6 +194,15 @@ body {
   animation: flame-flicker 1.4s ease-in-out infinite;
 }
 
+/* 노트 페이지 내부 스크롤: 휠/터치 스크롤은 그대로 두고 스크롤바만 시각적으로 숨긴다 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-flip,
   .stamp-in,
