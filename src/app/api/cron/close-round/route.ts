@@ -24,10 +24,11 @@ export async function GET(request: Request) {
   const supabase = createAdminClient();
   const today = todayKst();
 
-  // Hobby 플랜은 cron job이 2개로 제한돼 있어, 자유 게시판의 만료 글 정리는
-  // 별도 cron 대신 기존 자정 cron에 얹어서 처리한다. 목록 조회는 expires_at 기준으로
-  // 이미 걸러지므로, 여기서는 하루 늦게 지워져도 화면에는 영향 없음.
+  // Hobby 플랜은 cron job이 2개로 제한돼 있어, 자유 게시판의 만료 글 정리와 의뢰소의
+  // 만료 의뢰 환불도 별도 cron 대신 기존 자정 cron에 얹어서 처리한다. 목록 조회는
+  // expires_at 기준으로 이미 걸러지므로, 여기서는 하루 늦게 지워져도 화면에는 영향 없음.
   await supabase.from("board_posts").delete().lt("expires_at", new Date().toISOString());
+  await supabase.rpc("expire_commissions");
 
   const { data: rounds, error: roundsError } = await supabase
     .from("daily_rounds")

@@ -12,6 +12,7 @@ const TABS: Tab[] = [
   { href: "/ranking", label: "랭킹", rotate: "-0.8deg", depth: 12 },
   { href: "/propose", label: "문장 제안하기", rotate: "1.6deg", depth: 22 },
   { href: "/board", label: "자유 게시판", rotate: "-1.4deg", depth: 16 },
+  { href: "/commission", label: "의뢰소", rotate: "1.1deg", depth: 19 },
 ];
 
 const MYPAGE_TAB: Tab = { href: "/mypage", label: "마이페이지", rotate: "-1.2deg", depth: 14 };
@@ -19,9 +20,9 @@ const MYPAGE_TAB: Tab = { href: "/mypage", label: "마이페이지", rotate: "-1
 export function PostitNav({ loggedIn }: { loggedIn: boolean }) {
   const pathname = usePathname();
 
-  // /board는 노트 밖의 코르크보드라 페이지 인덱스 탭(포스트잇 형식) 대신
-  // 보드 상단의 "노트로 돌아가기" 버튼으로 이동한다.
-  if (pathname?.startsWith("/board")) return null;
+  // /board, /commission은 노트 밖의 게시판이라 페이지 인덱스 탭(포스트잇 형식) 대신
+  // 보드 상단의 "돌아가기" 버튼으로 이동한다.
+  if (pathname?.startsWith("/board") || pathname?.startsWith("/commission")) return null;
 
   const tabs = loggedIn ? [...TABS, MYPAGE_TAB] : TABS;
 
