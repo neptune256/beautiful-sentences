@@ -22,27 +22,32 @@ export function QuestWidgetCard({ status }: { status: DailyQuestStatus }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={[
-          "pop-in flex items-center gap-1.5 rounded-full border border-[var(--paper-grid)] px-3 py-1.5 font-sans text-xs font-bold shadow-[2px_3px_8px_rgba(0,0,0,0.28)] transition-transform hover:scale-105",
+          "pop-in flex items-center gap-2.5 rounded-full border-2 border-[var(--paper-grid)] px-5 py-3 font-sans text-base font-bold shadow-[3px_5px_14px_rgba(0,0,0,0.32)] transition-transform hover:scale-105",
           allDone
             ? "bg-[var(--postit-active)] text-[var(--wood-shadow)]"
             : "bg-[color-mix(in_srgb,var(--paper-cream)_96%,#fff)] text-[var(--ink)]",
         ].join(" ")}
       >
-        <span aria-hidden>{allDone ? "🎉" : "📋"}</span>
-        <span className="font-mono">
-          {doneCount}/{QUESTS.length}
+        <span aria-hidden className="text-2xl leading-none">
+          {allDone ? "🎉" : "📋"}
+        </span>
+        <span className="flex flex-col items-start leading-tight">
+          <span className="text-[10px] font-bold tracking-[0.15em] opacity-70">퀘스트</span>
+          <span className="font-mono text-lg">
+            {doneCount}/{QUESTS.length}
+          </span>
         </span>
       </button>
 
       {open && (
         <div
-          className="absolute right-0 top-full z-10 mt-2 flex w-44 flex-col gap-2 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_96%,#fff)] p-3 shadow-[3px_4px_10px_rgba(0,0,0,0.28)] sm:w-48"
+          className="absolute right-0 bottom-full z-10 mb-3 flex w-56 flex-col gap-2.5 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_96%,#fff)] p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.35)] sm:w-64"
           style={{ transform: "rotate(-1.2deg)" }}
         >
-          <span className="font-sans text-[11px] font-bold tracking-[0.1em] text-[var(--ink)]">
+          <span className="font-sans text-sm font-bold tracking-[0.1em] text-[var(--ink)]">
             {allDone ? "오늘의 퀘스트 완료 🎉" : "오늘의 퀘스트"}
           </span>
-          <ul className="flex flex-col gap-1.5">
+          <ul className="flex flex-col gap-2">
           {QUESTS.map((q) => {
             const done = status[q.key];
             return (
@@ -50,7 +55,7 @@ export function QuestWidgetCard({ status }: { status: DailyQuestStatus }) {
                 <Link
                   href={q.href}
                   className={[
-                    "flex items-center gap-2 rounded-sm px-2 py-1.5 font-sans text-xs transition-colors",
+                    "flex items-center gap-3 rounded-sm px-3 py-2.5 font-sans text-sm transition-colors",
                     done
                       ? "bg-[color-mix(in_srgb,var(--postit-active)_55%,transparent)] text-[var(--ink)]"
                       : "bg-white text-[color-mix(in_srgb,var(--ink)_75%,transparent)] hover:bg-[color-mix(in_srgb,var(--paper-cream)_60%,#fff)]",
@@ -59,7 +64,7 @@ export function QuestWidgetCard({ status }: { status: DailyQuestStatus }) {
                   <span
                     aria-hidden
                     className={[
-                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold",
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
                       done
                         ? "border-[var(--stamp-red)] bg-[var(--stamp-red)] text-[var(--paper-cream)]"
                         : "border-[color-mix(in_srgb,var(--ink)_35%,transparent)] text-transparent",
