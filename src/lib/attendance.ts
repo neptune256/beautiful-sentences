@@ -1,8 +1,17 @@
 import type { createClient } from "@/lib/supabase/server";
+import { QUEST_FEATURE_LAUNCH_DATE } from "@/lib/quests";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export const STREAK_MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
+
+/**
+ * 그 라운드 날짜에 출석 인정을 위해 네 단어 글쓰기 퀘스트까지 요구하는지 여부.
+ * 기능 출시 이전 날짜는 문장 제출만으로 이미 출석 처리된 기록이라 소급 적용하지 않는다.
+ */
+function requiresWordplayQuest(roundDate: string) {
+  return roundDate >= QUEST_FEATURE_LAUNCH_DATE;
+}
 
 export type StreakInfo = {
   currentStreak: number;
@@ -33,21 +42,34 @@ export async function computeStreakInfo(
   }
 
   const roundIds = rounds.map((r) => r.id);
-  const { data: subs } = await supabase
-    .from("submissions")
-    .select("daily_round_id")
-    .eq("user_id", userId)
-    .in("daily_round_id", roundIds);
+  const [{ data: subs }, { data: questLogs }] = await Promise.all([
+    supabase
+      .from("submissions")
+      .select("daily_round_id")
+      .eq("user_id", userId)
+      .in("daily_round_id", roundIds),
+    supabase
+      .from("wordplay_quest_log")
+      .select("quest_date")
+      .eq("user_id", userId)
+      .lte("quest_date", todayStr),
+  ]);
 
   const submittedSet = new Set((subs ?? []).map((s) => s.daily_round_id));
+  const wordplayDoneSet = new Set((questLogs ?? []).map((q) => q.quest_date));
 
   let currentStreak = 0;
   let longestStreak = 0;
+  let totalDays = 0;
   let running = 0;
   let stillCounting = true;
 
   for (const r of rounds) {
-    if (submittedSet.has(r.id)) {
+    const attended =
+      submittedSet.has(r.id) &&
+      (!requiresWordplayQuest(r.round_date) || wordplayDoneSet.has(r.round_date));
+    if (attended) {
+      totalDays++;
       running++;
       if (stillCounting) currentStreak = running;
       longestStreak = Math.max(longestStreak, running);
@@ -57,7 +79,7 @@ export async function computeStreakInfo(
     }
   }
 
-  return { currentStreak, longestStreak, totalDays: submittedSet.size };
+  return { currentStreak, longestStreak, totalDays };
 }
 
 export type UserStreak = {
@@ -89,10 +111,18 @@ export async function computeAllStreaks(
   if (!rounds || rounds.length === 0) return [];
 
   const roundIds = rounds.map((r) => r.id);
-  const { data: subs } = await supabase
-    .from("submissions")
-    .select("user_id, daily_round_id")
-    .in("daily_round_id", roundIds);
+  const earliestRoundDate = rounds[rounds.length - 1].round_date;
+  const [{ data: subs }, { data: questLogs }] = await Promise.all([
+    supabase
+      .from("submissions")
+      .select("user_id, daily_round_id")
+      .in("daily_round_id", roundIds),
+    supabase
+      .from("wordplay_quest_log")
+      .select("user_id, quest_date")
+      .gte("quest_date", earliestRoundDate)
+      .lte("quest_date", todayStr),
+  ]);
 
   const attendedByUser = new Map<string, Set<string>>();
   for (const s of subs ?? []) {
@@ -104,15 +134,31 @@ export async function computeAllStreaks(
     set.add(s.daily_round_id);
   }
 
+  const wordplayDoneByUser = new Map<string, Set<string>>();
+  for (const q of questLogs ?? []) {
+    let set = wordplayDoneByUser.get(q.user_id);
+    if (!set) {
+      set = new Set();
+      wordplayDoneByUser.set(q.user_id, set);
+    }
+    set.add(q.quest_date);
+  }
+
   const results: UserStreak[] = [];
   for (const [userId, submittedSet] of attendedByUser) {
+    const wordplayDoneSet = wordplayDoneByUser.get(userId) ?? new Set<string>();
     let currentStreak = 0;
     let longestStreak = 0;
+    let totalDays = 0;
     let running = 0;
     let stillCounting = true;
 
     for (const r of rounds) {
-      if (submittedSet.has(r.id)) {
+      const attended =
+        submittedSet.has(r.id) &&
+        (!requiresWordplayQuest(r.round_date) || wordplayDoneSet.has(r.round_date));
+      if (attended) {
+        totalDays++;
         running++;
         if (stillCounting) currentStreak = running;
         longestStreak = Math.max(longestStreak, running);
@@ -122,7 +168,7 @@ export async function computeAllStreaks(
       }
     }
 
-    results.push({ userId, currentStreak, longestStreak, totalDays: submittedSet.size });
+    results.push({ userId, currentStreak, longestStreak, totalDays });
   }
 
   return results;
@@ -154,17 +200,28 @@ export async function getMonthAttendanceDays(
 
   if (!rounds || rounds.length === 0) return [];
 
-  const { data: subs } = await supabase
-    .from("submissions")
-    .select("daily_round_id")
-    .eq("user_id", userId)
-    .in("daily_round_id", rounds.map((r) => r.id));
+  const [{ data: subs }, { data: questLogs }] = await Promise.all([
+    supabase
+      .from("submissions")
+      .select("daily_round_id")
+      .eq("user_id", userId)
+      .in("daily_round_id", rounds.map((r) => r.id)),
+    supabase
+      .from("wordplay_quest_log")
+      .select("quest_date")
+      .eq("user_id", userId)
+      .gte("quest_date", start)
+      .lte("quest_date", end),
+  ]);
 
   const submittedSet = new Set((subs ?? []).map((s) => s.daily_round_id));
+  const wordplayDoneSet = new Set((questLogs ?? []).map((q) => q.quest_date));
 
   return rounds.map((r) => ({
     date: r.round_date,
-    attended: submittedSet.has(r.id),
+    attended:
+      submittedSet.has(r.id) &&
+      (!requiresWordplayQuest(r.round_date) || wordplayDoneSet.has(r.round_date)),
     isHoliday: r.status === "holiday",
   }));
 }

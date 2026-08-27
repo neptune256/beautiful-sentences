@@ -3,6 +3,7 @@ import { Noto_Serif_KR, Nanum_Gothic_Coding, Nanum_Gothic } from "next/font/goog
 import { Nav } from "@/components/nav";
 import { PageChrome } from "@/components/page-chrome";
 import { OnboardingModals } from "@/components/onboarding-modals";
+import { QuestWidget } from "@/components/quest-widget";
 import "./globals.css";
 
 const notoSerifKR = Noto_Serif_KR({
@@ -44,6 +45,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="desk-surface flex min-h-full flex-col items-center px-4 py-8 sm:py-16">
         <OnboardingModals />
+        <div className="fixed right-3 top-3 z-30 sm:right-6 sm:top-6">
+          <QuestWidget />
+        </div>
         <PageChrome nav={<Nav />}>{children}</PageChrome>
       </body>
     </html>

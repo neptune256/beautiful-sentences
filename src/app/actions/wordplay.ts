@@ -3,8 +3,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { shareContentToBoard } from "@/app/actions/board";
+import { todayKst } from "@/lib/date";
 
-const MAX_ENTRIES = 10;
+const MAX_ENTRIES = 60;
 
 export type WordplayEntry = {
   id: string;
@@ -93,4 +94,11 @@ export async function shareWordplayEntry(id: string) {
 
   const content = `"${entry.sentence}"\n— ${entry.adjective} ${entry.noun} · ${entry.color_name} · ${entry.verb}`;
   await shareContentToBoard(content);
+
+  await supabase
+    .from("wordplay_quest_log")
+    .upsert(
+      { user_id: userId, quest_date: todayKst() },
+      { onConflict: "user_id,quest_date", ignoreDuplicates: true },
+    );
 }

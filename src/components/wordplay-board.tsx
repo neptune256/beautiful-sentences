@@ -16,7 +16,7 @@ import {
   type WordplayEntry,
 } from "@/app/actions/wordplay";
 
-const MAX_ENTRIES = 10;
+const MAX_ENTRIES = 60;
 
 type Triple = {
   noun: string;
