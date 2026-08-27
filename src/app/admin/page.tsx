@@ -14,6 +14,7 @@ import {
   upsertGeminiPricing,
   useSentenceToday,
   writeSentenceToday,
+  markAllFeedbackRead,
 } from "@/app/actions/admin";
 
 const HISTORY_PAGE_SIZE = 3;
@@ -21,6 +22,7 @@ const HISTORY_PAGE_SIZE = 3;
 const TABS = [
   { key: "sentences", label: "문장 관리" },
   { key: "credit", label: "Gemini 크레딧" },
+  { key: "feedback", label: "피드백" },
   { key: "history", label: "과거 이력" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
@@ -85,6 +87,8 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     { data: budgetRow },
     { data: pricing },
     { data: usageLog },
+    { data: feedback },
+    { count: unreadFeedbackCount },
   ] = await Promise.all([
     admin
       .from("situation_sentences")
@@ -115,6 +119,14 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       .from("gemini_usage_log")
       .select("id, created_at, model, total_tokens, estimated_cost_usd")
       .order("created_at", { ascending: false }),
+    admin
+      .from("feedback")
+      .select("id, content, nickname, page_path, is_read, created_at")
+      .order("created_at", { ascending: false }),
+    admin
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("is_read", false),
   ]);
 
   const needsTodaySentence = !todayRound || todayRound.status === "holiday";
@@ -212,6 +224,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
             }`}
           >
             {t.label}
+            {t.key === "feedback" && unreadFeedbackCount ? ` (${unreadFeedbackCount})` : ""}
           </Link>
         ))}
       </nav>
@@ -613,6 +626,53 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               <p className="text-xs text-black/50">아직 기록된 호출이 없습니다.</p>
             )}
           </div>
+        </div>
+      )}
+
+      {tab === "feedback" && (
+        <div className="space-y-4">
+          <div className="flex items-baseline justify-between">
+            <p className="text-sm font-semibold">
+              접수된 피드백 ({feedback?.length ?? 0})
+            </p>
+            {unreadFeedbackCount ? (
+              <form action={markAllFeedbackRead}>
+                <button
+                  type="submit"
+                  className="rounded-full border border-black/10 px-3 py-1 text-xs"
+                >
+                  모두 읽음으로 표시
+                </button>
+              </form>
+            ) : null}
+          </div>
+
+          {feedback && feedback.length > 0 ? (
+            <ul className="space-y-3">
+              {feedback.map((f) => (
+                <li
+                  key={f.id}
+                  className={`rounded-lg border p-4 ${
+                    f.is_read ? "border-black/10" : "border-amber-600/40 bg-amber-600/5"
+                  }`}
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-xs text-black/50">
+                      {f.nickname ?? "익명"} · {f.page_path ?? "-"}
+                    </p>
+                    <p className="text-xs text-black/40">
+                      {new Date(f.created_at).toLocaleString("ko-KR")}
+                    </p>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">
+                    {f.content}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-black/50">아직 접수된 피드백이 없습니다.</p>
+          )}
         </div>
       )}
 

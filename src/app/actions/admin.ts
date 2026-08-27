@@ -332,6 +332,22 @@ export async function writeSentenceToday(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function markAllFeedbackRead() {
+  await requireAdmin();
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("feedback")
+    .update({ is_read: true })
+    .eq("is_read", false);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+}
+
 export async function addToPool(formData: FormData) {
   await requireAdmin();
 

@@ -5,6 +5,7 @@ import { PageChrome } from "@/components/page-chrome";
 import { OnboardingModals } from "@/components/onboarding-modals";
 import { QuestWidget } from "@/components/quest-widget";
 import { QuestWidgetSlot } from "@/components/quest-widget-slot";
+import { FeedbackButton } from "@/components/feedback-button";
 import "./globals.css";
 
 const notoSerifKR = Noto_Serif_KR({
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <QuestWidget />
         </QuestWidgetSlot>
         <PageChrome nav={<Nav />}>{children}</PageChrome>
+        <FeedbackButton />
       </body>
     </html>
   );
