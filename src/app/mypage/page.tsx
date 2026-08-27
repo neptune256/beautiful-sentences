@@ -27,7 +27,7 @@ export default async function MyPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nickname, points")
+    .select("nickname, points, diamonds")
     .eq("id", user.id)
     .single();
 
@@ -50,7 +50,7 @@ export default async function MyPage() {
         </h1>
       </header>
 
-      <section className="-mt-2 flex items-center justify-between rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-3">
+      <section className="-mt-2 flex items-center gap-6 rounded-sm border border-[var(--paper-grid)] bg-[color-mix(in_srgb,var(--paper-cream)_90%,#fff)] px-5 py-3">
         <div className="flex flex-col">
           <span className="font-sans text-xs font-bold tracking-[0.2em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
             누적 포인트
@@ -58,6 +58,14 @@ export default async function MyPage() {
           <span className="font-serif text-3xl font-bold text-[var(--stamp-red)]">
             {(profile?.points ?? 0).toLocaleString()}
             <span className="ml-1 text-base text-[var(--ink)]">점</span>
+          </span>
+        </div>
+        <div className="flex flex-col border-l border-[var(--paper-grid)] pl-6">
+          <span className="font-sans text-xs font-bold tracking-[0.2em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+            다이아
+          </span>
+          <span className="font-serif text-3xl font-bold text-[#3B82C4]">
+            💎 {(profile?.diamonds ?? 0).toLocaleString()}
           </span>
         </div>
       </section>

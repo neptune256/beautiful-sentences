@@ -1,9 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { shareContentToBoard } from "@/app/actions/board";
 import { todayKst } from "@/lib/date";
+import { computeStreakInfo, awardStreakMilestoneIfNeeded } from "@/lib/attendance";
 
 const MAX_ENTRIES = 60;
 
@@ -101,4 +103,8 @@ export async function shareWordplayEntry(id: string) {
       { user_id: userId, quest_date: todayKst() },
       { onConflict: "user_id,quest_date", ignoreDuplicates: true },
     );
+
+  const today = todayKst();
+  const streak = await computeStreakInfo(supabase, userId, today);
+  await awardStreakMilestoneIfNeeded(createAdminClient(), userId, streak.currentStreak, today);
 }

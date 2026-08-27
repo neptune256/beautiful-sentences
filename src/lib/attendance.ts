@@ -1,9 +1,53 @@
 import type { createClient } from "@/lib/supabase/server";
+import type { createAdminClient } from "@/lib/supabase/admin";
 import { QUEST_FEATURE_LAUNCH_DATE } from "@/lib/quests";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export const STREAK_MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
+
+// 마일스톤 도달 시 지급하는 "다이아"(듀오링고 다이아에 대응하는 재화, 기존 점수와 별개) 개수.
+export const STREAK_MILESTONE_REWARDS: Record<number, number> = {
+  3: 10,
+  7: 20,
+  14: 35,
+  30: 60,
+  50: 100,
+  100: 200,
+  200: 400,
+  365: 700,
+};
+
+/**
+ * 오늘 출석이 확정되는 시점(문장 제출 또는 네 단어 퀘스트 완료, 둘 중 나중 것)마다 호출한다.
+ * 방금 갱신된 연속 출석일수가 보상 마일스톤이면 다이아를 지급한다. diamond_transactions의
+ * (user_id, reference_date, reason) 유니크 제약 덕분에 같은 날 여러 번 불려도 한 번만 지급된다.
+ */
+export async function awardStreakMilestoneIfNeeded(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  currentStreak: number,
+  todayStr: string,
+): Promise<number> {
+  const reward = STREAK_MILESTONE_REWARDS[currentStreak];
+  if (!reward) return 0;
+
+  const { error } = await admin.from("diamond_transactions").insert({
+    user_id: userId,
+    amount: reward,
+    reason: "streak_milestone",
+    reference_date: todayStr,
+  });
+
+  if (error) {
+    // 유니크 제약 위반 = 오늘 이미 지급됨. 그 외 에러는 조용히 무시(다이아는 부가 보상이라
+    // 여기서 실패해도 출석/제출 자체는 이미 끝난 상태라 사용자에게 에러를 노출하지 않는다).
+    return 0;
+  }
+
+  await admin.rpc("increment_diamonds", { p_user_id: userId, p_amount: reward });
+  return reward;
+}
 
 /**
  * 그 라운드 날짜에 출석 인정을 위해 네 단어 글쓰기 퀘스트까지 요구하는지 여부.

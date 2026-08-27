@@ -4,8 +4,6 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { saveSubmission, finalizeSubmission } from "@/app/actions/submissions";
 import { SubmissionSuccessModal } from "@/components/submission-success-modal";
-import { STREAK_MILESTONES } from "@/lib/attendance";
-import { todayKst } from "@/lib/date";
 
 type CriterionScores = {
   imagery: number;
@@ -65,8 +63,6 @@ function fireStreakConfetti() {
   });
 }
 
-const STREAK_SHOWN_KEY_PREFIX = "streak_milestone_shown_";
-
 export function SubmissionForm({
   dailyRoundId,
   initialContent,
@@ -86,6 +82,7 @@ export function SubmissionForm({
   const [showSuccess, setShowSuccess] = useState(false);
   const [streak, setStreak] = useState<number | null>(null);
   const [isMilestone, setIsMilestone] = useState(false);
+  const [diamondsAwarded, setDiamondsAwarded] = useState(0);
   const [isFinalized, setIsFinalized] = useState(!!finalizedAt);
   const [result, setResult] = useState<Evaluation | null>(evaluation);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -104,20 +101,18 @@ export function SubmissionForm({
     setError(null);
     startTransition(async () => {
       try {
-        const { streak: streakInfo } = await saveSubmission(dailyRoundId, content);
+        const { streak: streakInfo, diamondsAwarded: awarded } = await saveSubmission(
+          dailyRoundId,
+          content,
+        );
         setSavedAt(new Date().toLocaleTimeString("ko-KR"));
         setStreak(streakInfo.currentStreak);
-
-        const milestoneKey = `${STREAK_SHOWN_KEY_PREFIX}${todayKst()}`;
-        const alreadyCelebratedToday = localStorage.getItem(milestoneKey) === "1";
-        const hitMilestone =
-          STREAK_MILESTONES.includes(streakInfo.currentStreak) && !alreadyCelebratedToday;
-        setIsMilestone(hitMilestone);
+        setDiamondsAwarded(awarded);
+        setIsMilestone(awarded > 0);
 
         fireSuccessConfetti();
-        if (hitMilestone) {
+        if (awarded > 0) {
           fireStreakConfetti();
-          localStorage.setItem(milestoneKey, "1");
         }
         setShowSuccess(true);
       } catch (e) {
@@ -267,6 +262,7 @@ export function SubmissionForm({
         onClose={() => setShowSuccess(false)}
         streak={streak}
         isMilestone={isMilestone}
+        diamondsAwarded={diamondsAwarded}
       />
     </section>
   );

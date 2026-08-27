@@ -15,14 +15,20 @@ export async function Nav() {
   let nickname: string | null = null;
   let needsNicknameSetup = false;
   let streak = 0;
+  let diamonds = 0;
   if (user) {
     const [{ data: profile }, streakInfo] = await Promise.all([
-      supabase.from("profiles").select("nickname, nickname_set").eq("id", user.id).single(),
+      supabase
+        .from("profiles")
+        .select("nickname, nickname_set, diamonds")
+        .eq("id", user.id)
+        .single(),
       computeStreakInfo(supabase, user.id, todayKst()),
     ]);
     nickname = profile?.nickname ?? null;
     needsNicknameSetup = profile?.nickname_set === false;
     streak = streakInfo.currentStreak;
+    diamonds = profile?.diamonds ?? 0;
   }
 
   return (
@@ -37,7 +43,7 @@ export async function Nav() {
         >
           아름다운 문장
         </Link>
-        <AuthButton nickname={nickname} streak={streak} />
+        <AuthButton nickname={nickname} streak={streak} diamonds={diamonds} />
       </div>
       <PostitNav loggedIn={!!user} />
     </>

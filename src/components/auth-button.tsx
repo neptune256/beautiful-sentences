@@ -6,9 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 export function AuthButton({
   nickname,
   streak = 0,
+  diamonds = 0,
 }: {
   nickname: string | null;
   streak?: number;
+  diamonds?: number;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -45,6 +47,14 @@ export function AuthButton({
               className="stamp-in flex items-center gap-0.5 rounded-full bg-[var(--postit-active)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
             >
               🔥{streak}
+            </span>
+          )}
+          {diamonds > 0 && (
+            <span
+              aria-label={`다이아 ${diamonds}개`}
+              className="flex items-center gap-0.5 rounded-full bg-[color-mix(in_srgb,#3B82C4_25%,var(--paper-cream))] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
+            >
+              💎{diamonds}
             </span>
           )}
         </span>

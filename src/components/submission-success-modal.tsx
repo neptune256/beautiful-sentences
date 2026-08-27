@@ -25,12 +25,14 @@ export function SubmissionSuccessModal({
   onClose,
   streak,
   isMilestone,
+  diamondsAwarded = 0,
 }: {
   open: boolean;
   content: string;
   onClose: () => void;
   streak?: number | null;
   isMilestone?: boolean;
+  diamondsAwarded?: number;
 }) {
   return (
     <AnimatePresence>
@@ -75,6 +77,11 @@ export function SubmissionSuccessModal({
                   {isMilestone && (
                     <span className="font-sans text-xs font-bold tracking-wide text-[color-mix(in_srgb,var(--stamp-red)_80%,var(--ink))]">
                       대단해요! {streak}일을 채웠어요
+                    </span>
+                  )}
+                  {diamondsAwarded > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#3B82C4_20%,var(--paper-cream))] px-3 py-1 font-mono text-sm font-bold text-[#2E6396]">
+                      💎 +{diamondsAwarded} 다이아 획득!
                     </span>
                   )}
                 </div>
