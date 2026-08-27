@@ -2,12 +2,19 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { getAttendanceMonth } from "@/app/actions/attendance";
-import type { AttendanceDay } from "@/lib/attendance";
+import { STREAK_MILESTONES, STREAK_MILESTONE_REWARDS, type AttendanceDay } from "@/lib/attendance";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
+}
+
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
 }
 
 type Cell = {
@@ -18,6 +25,7 @@ type Cell = {
   isHoliday: boolean;
   isToday: boolean;
   isFuture: boolean;
+  diamonds: number;
 };
 
 export function AttendanceCalendar({
@@ -25,16 +33,30 @@ export function AttendanceCalendar({
   initialMonth,
   initialDays,
   todayStr,
+  currentStreak,
 }: {
   initialYear: number;
   initialMonth: number;
   initialDays: AttendanceDay[];
   todayStr: string;
+  currentStreak: number;
 }) {
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [days, setDays] = useState(initialDays);
   const [isPending, startTransition] = useTransition();
+
+  // 지금의 연속 출석이 끊기지 않고 이어진다는 가정 하에, 앞으로 남은 마일스톤을
+  // 달성할 예정일을 계산한다 (오늘 + (마일스톤 - 현재 연속일수)).
+  const projectedMilestones = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const milestone of STREAK_MILESTONES) {
+      if (milestone <= currentStreak) continue;
+      const projectedDate = addDays(todayStr, milestone - currentStreak);
+      map.set(projectedDate, STREAK_MILESTONE_REWARDS[milestone]);
+    }
+    return map;
+  }, [todayStr, currentStreak]);
 
   function goToMonth(deltaMonths: number) {
     let ny = year;
@@ -71,6 +93,7 @@ export function AttendanceCalendar({
         isHoliday: info?.isHoliday ?? false,
         isToday: dateStr === todayStr,
         isFuture: dateStr > todayStr,
+        diamonds: info?.diamonds ?? 0,
       });
     }
     return list;
@@ -115,6 +138,8 @@ export function AttendanceCalendar({
         {cells.map((cell, i) => {
           if (!cell) return <span key={`empty-${i}`} />;
 
+          const projectedReward = cell.isFuture ? projectedMilestones.get(cell.dateStr) : undefined;
+
           return (
             <div
               key={cell.dateStr}
@@ -149,9 +174,38 @@ export function AttendanceCalendar({
               ) : (
                 <span className="h-5 w-5" />
               )}
+
+              {!cell.isFuture && cell.diamonds > 0 && (
+                <span
+                  title={`다이아 +${cell.diamonds}`}
+                  className="absolute -top-1 -right-1 rounded-full bg-[#3B82C4] px-1 font-mono text-[8px] font-bold leading-tight text-white"
+                >
+                  +{cell.diamonds}
+                </span>
+              )}
+
+              {projectedReward && (
+                <span
+                  title={`연속 출석을 이어가면 이날 다이아 +${projectedReward}`}
+                  className="absolute -top-1 -right-1 rounded-full border border-dashed border-[#3B82C4] bg-[color-mix(in_srgb,#3B82C4_12%,var(--paper-cream))] px-1 font-mono text-[8px] font-bold leading-tight text-[#3B82C4]"
+                >
+                  💎
+                </span>
+              )}
             </div>
           );
         })}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 font-sans text-[10px] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
+        <span className="inline-flex items-center gap-1">
+          <span className="rounded-full bg-[#3B82C4] px-1 font-mono text-[8px] font-bold leading-tight text-white">+N</span>
+          다이아 획득일
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="rounded-full border border-dashed border-[#3B82C4] px-1 font-mono text-[8px] font-bold leading-tight text-[#3B82C4]">💎</span>
+          연속 출석 유지 시 받을 예정일
+        </span>
       </div>
     </div>
   );

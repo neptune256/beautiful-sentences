@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { shareContentToBoard } from "@/app/actions/board";
 import { todayKst } from "@/lib/date";
 import { computeStreakInfo, awardStreakMilestoneIfNeeded } from "@/lib/attendance";
+import { awardDailyQuestDiamondsIfNeeded } from "@/lib/quests";
 
 const MAX_ENTRIES = 60;
 
@@ -105,6 +106,8 @@ export async function shareWordplayEntry(id: string) {
     );
 
   const today = todayKst();
+  const admin = createAdminClient();
   const streak = await computeStreakInfo(supabase, userId, today);
-  await awardStreakMilestoneIfNeeded(createAdminClient(), userId, streak.currentStreak, today);
+  await awardStreakMilestoneIfNeeded(admin, userId, streak.currentStreak, today);
+  await awardDailyQuestDiamondsIfNeeded(supabase, admin, userId, today);
 }

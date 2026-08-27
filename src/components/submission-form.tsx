@@ -101,14 +101,15 @@ export function SubmissionForm({
     setError(null);
     startTransition(async () => {
       try {
-        const { streak: streakInfo, diamondsAwarded: awarded } = await saveSubmission(
-          dailyRoundId,
-          content,
-        );
+        const {
+          streak: streakInfo,
+          diamondsAwarded: awarded,
+          milestoneAwarded,
+        } = await saveSubmission(dailyRoundId, content);
         setSavedAt(new Date().toLocaleTimeString("ko-KR"));
         setStreak(streakInfo.currentStreak);
         setDiamondsAwarded(awarded);
-        setIsMilestone(awarded > 0);
+        setIsMilestone(milestoneAwarded);
 
         fireSuccessConfetti();
         if (awarded > 0) {

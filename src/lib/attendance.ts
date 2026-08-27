@@ -222,6 +222,7 @@ export type AttendanceDay = {
   date: string;
   attended: boolean;
   isHoliday: boolean;
+  diamonds: number;
 };
 
 export async function getMonthAttendanceDays(
@@ -244,7 +245,7 @@ export async function getMonthAttendanceDays(
 
   if (!rounds || rounds.length === 0) return [];
 
-  const [{ data: subs }, { data: questLogs }] = await Promise.all([
+  const [{ data: subs }, { data: questLogs }, { data: diamondTxs }] = await Promise.all([
     supabase
       .from("submissions")
       .select("daily_round_id")
@@ -256,10 +257,21 @@ export async function getMonthAttendanceDays(
       .eq("user_id", userId)
       .gte("quest_date", start)
       .lte("quest_date", end),
+    supabase
+      .from("diamond_transactions")
+      .select("reference_date, amount")
+      .eq("user_id", userId)
+      .gte("reference_date", start)
+      .lte("reference_date", end),
   ]);
 
   const submittedSet = new Set((subs ?? []).map((s) => s.daily_round_id));
   const wordplayDoneSet = new Set((questLogs ?? []).map((q) => q.quest_date));
+
+  const diamondsByDate = new Map<string, number>();
+  for (const tx of diamondTxs ?? []) {
+    diamondsByDate.set(tx.reference_date, (diamondsByDate.get(tx.reference_date) ?? 0) + tx.amount);
+  }
 
   return rounds.map((r) => ({
     date: r.round_date,
@@ -267,5 +279,6 @@ export async function getMonthAttendanceDays(
       submittedSet.has(r.id) &&
       (!requiresWordplayQuest(r.round_date) || wordplayDoneSet.has(r.round_date)),
     isHoliday: r.status === "holiday",
+    diamonds: diamondsByDate.get(r.round_date) ?? 0,
   }));
 }

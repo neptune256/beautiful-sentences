@@ -7,6 +7,7 @@ import { logGeminiUsage } from "@/lib/gemini-usage";
 import { revalidatePath } from "next/cache";
 import { todayKst } from "@/lib/date";
 import { computeStreakInfo, awardStreakMilestoneIfNeeded } from "@/lib/attendance";
+import { awardDailyQuestDiamondsIfNeeded } from "@/lib/quests";
 
 async function assertEditable(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -55,15 +56,21 @@ export async function saveSubmission(dailyRoundId: string, content: string) {
   revalidatePath("/mypage");
 
   const today = todayKst();
+  const admin = createAdminClient();
   const streak = await computeStreakInfo(supabase, user.id, today);
-  const diamondsAwarded = await awardStreakMilestoneIfNeeded(
-    createAdminClient(),
+  const milestoneAwarded = await awardStreakMilestoneIfNeeded(
+    admin,
     user.id,
     streak.currentStreak,
     today,
   );
+  const dailyQuestAwarded = await awardDailyQuestDiamondsIfNeeded(supabase, admin, user.id, today);
 
-  return { streak, diamondsAwarded };
+  return {
+    streak,
+    diamondsAwarded: milestoneAwarded + dailyQuestAwarded,
+    milestoneAwarded: milestoneAwarded > 0,
+  };
 }
 
 /**

@@ -93,6 +93,7 @@ export default async function MyPage() {
           initialMonth={month}
           initialDays={attendanceDays}
           todayStr={today}
+          currentStreak={streakInfo.currentStreak}
         />
       </section>
 

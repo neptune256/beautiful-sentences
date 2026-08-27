@@ -1,6 +1,9 @@
 import type { createClient } from "@/lib/supabase/server";
+import type { createAdminClient } from "@/lib/supabase/admin";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+export const DAILY_QUEST_DIAMOND_REWARD = 30;
 
 /**
  * 이 날짜부터 "출석 = 두 퀘스트(오늘의 문장 + 네 단어 글쓰기) 모두 완료"로 판정한다.
@@ -45,4 +48,31 @@ export async function getTodayQuestStatus(
   }
 
   return { sentenceDone, wordplayDone: !!questLog };
+}
+
+/**
+ * 오늘의 문장 + 네 단어 글쓰기 두 퀘스트가 모두 끝난 시점(둘 중 나중에 완료된 액션)마다 호출한다.
+ * diamond_transactions의 (user_id, reference_date, reason) 유니크 제약 덕분에 같은 날 여러 번
+ * 불려도(임시저장을 반복해도) 한 번만 지급된다.
+ */
+export async function awardDailyQuestDiamondsIfNeeded(
+  supabase: SupabaseServerClient,
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  todayStr: string,
+): Promise<number> {
+  const status = await getTodayQuestStatus(supabase, userId, todayStr);
+  if (!status.sentenceDone || !status.wordplayDone) return 0;
+
+  const { error } = await admin.from("diamond_transactions").insert({
+    user_id: userId,
+    amount: DAILY_QUEST_DIAMOND_REWARD,
+    reason: "daily_quest_complete",
+    reference_date: todayStr,
+  });
+
+  if (error) return 0;
+
+  await admin.rpc("increment_diamonds", { p_user_id: userId, p_amount: DAILY_QUEST_DIAMOND_REWARD });
+  return DAILY_QUEST_DIAMOND_REWARD;
 }
