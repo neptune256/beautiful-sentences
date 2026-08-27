@@ -37,7 +37,7 @@ export function NotebookShell({ children }: { children: React.ReactNode }) {
         <div className="relative aspect-[1/1.4142] overflow-hidden rounded-[0.15rem_0.5rem_0.5rem_0.15rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.55)]">
           <div
             key={pathname}
-            className="page-flip manuscript-bg relative h-full overflow-hidden py-8 pl-12 pr-6 sm:py-10 sm:pr-10"
+            className="page-flip manuscript-bg relative h-full overflow-hidden"
           >
             <div
               aria-hidden="true"
@@ -54,7 +54,10 @@ export function NotebookShell({ children }: { children: React.ReactNode }) {
                 />
               ))}
             </div>
-            <div className="relative h-full overflow-x-hidden overflow-y-auto">{children}</div>
+            {/* 스크롤바 자체는 노트의 진짜 오른쪽 끝에 붙게 하고, 내용만 안쪽 패딩으로 여백을 준다 */}
+            <div className="relative h-full overflow-x-hidden overflow-y-auto py-8 pl-12 pr-6 sm:py-10 sm:pr-10">
+              {children}
+            </div>
           </div>
         </div>
 
