@@ -160,9 +160,45 @@ body {
   animation: stamp-press 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ---------- 일일 퀘스트 완료 / 다이아 획득 연출 ---------- */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pop-in {
+  animation: pop-in 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(2deg);
+  }
+}
+
+.flame-flicker {
+  animation: flame-flicker 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-flip,
-  .stamp-in {
+  .stamp-in,
+  .pop-in,
+  .flame-flicker {
     animation: none;
   }
 }

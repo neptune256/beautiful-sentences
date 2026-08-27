@@ -17,11 +17,12 @@ export function QuestWidgetCard({ status }: { status: DailyQuestStatus }) {
   return (
     <div className="pointer-events-auto relative">
       <button
+        key={doneCount}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={[
-          "flex items-center gap-1.5 rounded-full border border-[var(--paper-grid)] px-3 py-1.5 font-sans text-xs font-bold shadow-[2px_3px_8px_rgba(0,0,0,0.28)] transition-transform hover:scale-105",
+          "pop-in flex items-center gap-1.5 rounded-full border border-[var(--paper-grid)] px-3 py-1.5 font-sans text-xs font-bold shadow-[2px_3px_8px_rgba(0,0,0,0.28)] transition-transform hover:scale-105",
           allDone
             ? "bg-[var(--postit-active)] text-[var(--wood-shadow)]"
             : "bg-[color-mix(in_srgb,var(--paper-cream)_96%,#fff)] text-[var(--ink)]",

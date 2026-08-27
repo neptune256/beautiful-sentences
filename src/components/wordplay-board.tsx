@@ -15,6 +15,8 @@ import {
   shareWordplayEntry,
   type WordplayEntry,
 } from "@/app/actions/wordplay";
+import { WordplayRewardModal } from "@/components/wordplay-reward-modal";
+import { fireDiamondConfetti } from "@/components/quest-celebration";
 
 const MAX_ENTRIES = 60;
 
@@ -48,6 +50,11 @@ export function WordplayBoard({
   const [isSaving, startSaving] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [showReward, setShowReward] = useState(false);
+  const [rewardStreak, setRewardStreak] = useState<number | null>(null);
+  const [rewardIsMilestone, setRewardIsMilestone] = useState(false);
+  const [rewardDiamonds, setRewardDiamonds] = useState(0);
+  const [rewardQuestDone, setRewardQuestDone] = useState(false);
 
   // 서버 렌더링과 클라이언트 렌더링의 무작위 값이 어긋나지 않도록, 첫 조합은
   // 마운트 이후에만 뽑는다.
@@ -104,8 +111,19 @@ export function WordplayBoard({
     setShareMessage(null);
     (async () => {
       try {
-        await shareWordplayEntry(id);
-        setShareMessage("자유 게시판에 붙였어요.");
+        const { streak, diamondsAwarded, milestoneAwarded, dailyQuestCompletedNow } =
+          await shareWordplayEntry(id);
+
+        if (dailyQuestCompletedNow || diamondsAwarded > 0) {
+          setRewardStreak(streak.currentStreak);
+          setRewardIsMilestone(milestoneAwarded);
+          setRewardDiamonds(diamondsAwarded);
+          setRewardQuestDone(dailyQuestCompletedNow);
+          fireDiamondConfetti();
+          setShowReward(true);
+        } else {
+          setShareMessage("자유 게시판에 붙였어요.");
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "공유에 실패했습니다.");
       } finally {
@@ -221,6 +239,15 @@ export function WordplayBoard({
           </ul>
         </section>
       )}
+
+      <WordplayRewardModal
+        open={showReward}
+        onClose={() => setShowReward(false)}
+        streak={rewardStreak}
+        isMilestone={rewardIsMilestone}
+        diamondsAwarded={rewardDiamonds}
+        dailyQuestCompletedNow={rewardQuestDone}
+      />
     </div>
   );
 }

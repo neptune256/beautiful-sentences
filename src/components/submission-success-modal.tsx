@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { QuestCompleteBanner } from "@/components/quest-celebration";
 
 const GRID_COLS = 12;
 const TYPE_INTERVAL_MS = 45;
@@ -26,6 +27,7 @@ export function SubmissionSuccessModal({
   streak,
   isMilestone,
   diamondsAwarded = 0,
+  dailyQuestCompletedNow = false,
 }: {
   open: boolean;
   content: string;
@@ -33,6 +35,7 @@ export function SubmissionSuccessModal({
   streak?: number | null;
   isMilestone?: boolean;
   diamondsAwarded?: number;
+  dailyQuestCompletedNow?: boolean;
 }) {
   return (
     <AnimatePresence>
@@ -66,26 +69,12 @@ export function SubmissionSuccessModal({
                 당신의 문장이 밤하늘에 기록되었습니다.
               </p>
 
-              {!!streak && streak > 0 && (
-                <div
-                  key={streak}
-                  className="stamp-in mt-4 inline-flex flex-col items-center gap-1"
-                >
-                  <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[var(--stamp-red)] px-4 py-1.5 font-serif text-base font-bold text-[var(--stamp-red)]">
-                    🔥 {streak}일 연속 출석
-                  </span>
-                  {isMilestone && (
-                    <span className="font-sans text-xs font-bold tracking-wide text-[color-mix(in_srgb,var(--stamp-red)_80%,var(--ink))]">
-                      대단해요! {streak}일을 채웠어요
-                    </span>
-                  )}
-                  {diamondsAwarded > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#3B82C4_20%,var(--paper-cream))] px-3 py-1 font-mono text-sm font-bold text-[#2E6396]">
-                      💎 +{diamondsAwarded} 다이아 획득!
-                    </span>
-                  )}
-                </div>
-              )}
+              <QuestCompleteBanner
+                streak={streak}
+                milestoneAwarded={isMilestone}
+                dailyQuestCompletedNow={dailyQuestCompletedNow}
+                diamondsAwarded={diamondsAwarded}
+              />
 
               <button
                 type="button"

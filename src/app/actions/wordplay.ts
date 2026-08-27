@@ -108,6 +108,18 @@ export async function shareWordplayEntry(id: string) {
   const today = todayKst();
   const admin = createAdminClient();
   const streak = await computeStreakInfo(supabase, userId, today);
-  await awardStreakMilestoneIfNeeded(admin, userId, streak.currentStreak, today);
-  await awardDailyQuestDiamondsIfNeeded(supabase, admin, userId, today);
+  const milestoneAwarded = await awardStreakMilestoneIfNeeded(
+    admin,
+    userId,
+    streak.currentStreak,
+    today,
+  );
+  const dailyQuestAwarded = await awardDailyQuestDiamondsIfNeeded(supabase, admin, userId, today);
+
+  return {
+    streak,
+    diamondsAwarded: milestoneAwarded + dailyQuestAwarded,
+    milestoneAwarded: milestoneAwarded > 0,
+    dailyQuestCompletedNow: dailyQuestAwarded > 0,
+  };
 }

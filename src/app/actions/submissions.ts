@@ -70,6 +70,7 @@ export async function saveSubmission(dailyRoundId: string, content: string) {
     streak,
     diamondsAwarded: milestoneAwarded + dailyQuestAwarded,
     milestoneAwarded: milestoneAwarded > 0,
+    dailyQuestCompletedNow: dailyQuestAwarded > 0,
   };
 }
 

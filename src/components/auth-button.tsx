@@ -43,16 +43,21 @@ export function AuthButton({
           </span>
           {streak > 0 && (
             <span
+              key={streak}
               aria-label={`연속 출석 ${streak}일째`}
-              className="stamp-in flex items-center gap-0.5 rounded-full bg-[var(--postit-active)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
+              className="pop-in flex items-center gap-0.5 rounded-full bg-[var(--postit-active)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
             >
-              🔥{streak}
+              <span className="flame-flicker inline-block" aria-hidden>
+                🔥
+              </span>
+              {streak}
             </span>
           )}
           {diamonds > 0 && (
             <span
+              key={diamonds}
               aria-label={`다이아 ${diamonds}개`}
-              className="flex items-center gap-0.5 rounded-full bg-[color-mix(in_srgb,#3B82C4_25%,var(--paper-cream))] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
+              className="pop-in flex items-center gap-0.5 rounded-full bg-[color-mix(in_srgb,#3B82C4_25%,var(--paper-cream))] px-2 py-0.5 font-mono text-xs font-bold text-[var(--wood-shadow)]"
             >
               💎{diamonds}
             </span>

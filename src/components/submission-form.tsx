@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { saveSubmission, finalizeSubmission } from "@/app/actions/submissions";
 import { SubmissionSuccessModal } from "@/components/submission-success-modal";
+import { fireDiamondConfetti } from "@/components/quest-celebration";
 
 type CriterionScores = {
   imagery: number;
@@ -83,6 +84,7 @@ export function SubmissionForm({
   const [streak, setStreak] = useState<number | null>(null);
   const [isMilestone, setIsMilestone] = useState(false);
   const [diamondsAwarded, setDiamondsAwarded] = useState(0);
+  const [dailyQuestCompletedNow, setDailyQuestCompletedNow] = useState(false);
   const [isFinalized, setIsFinalized] = useState(!!finalizedAt);
   const [result, setResult] = useState<Evaluation | null>(evaluation);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -105,15 +107,20 @@ export function SubmissionForm({
           streak: streakInfo,
           diamondsAwarded: awarded,
           milestoneAwarded,
+          dailyQuestCompletedNow: questDone,
         } = await saveSubmission(dailyRoundId, content);
         setSavedAt(new Date().toLocaleTimeString("ko-KR"));
         setStreak(streakInfo.currentStreak);
         setDiamondsAwarded(awarded);
         setIsMilestone(milestoneAwarded);
+        setDailyQuestCompletedNow(questDone);
 
         fireSuccessConfetti();
-        if (awarded > 0) {
+        if (milestoneAwarded) {
           fireStreakConfetti();
+        }
+        if (questDone) {
+          fireDiamondConfetti();
         }
         setShowSuccess(true);
       } catch (e) {
@@ -264,6 +271,7 @@ export function SubmissionForm({
         streak={streak}
         isMilestone={isMilestone}
         diamondsAwarded={diamondsAwarded}
+        dailyQuestCompletedNow={dailyQuestCompletedNow}
       />
     </section>
   );
