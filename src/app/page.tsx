@@ -78,7 +78,7 @@ export default async function HomePage() {
           이 장면을, 당신의 문체로 다시 써보세요.
         </h1>
         <div className="mt-2 overflow-x-auto pb-1">
-          <ManuscriptDisplay text={situation?.content ?? ""} columns={12} />
+          <ManuscriptDisplay text={situation?.content ?? ""} columns={18} />
         </div>
       </header>
 
