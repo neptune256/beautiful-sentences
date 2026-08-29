@@ -9,8 +9,9 @@ const TABS: Tab[] = [
   { href: "/", label: "오늘의 문장", rotate: "-1.5deg", depth: 15 },
   { href: "/yesterday", label: "어제의 결과", rotate: "1.2deg", depth: 20 },
   { href: "/wordplay", label: "네 단어 글쓰기", rotate: "0.9deg", depth: 18 },
+  { href: "/feed", label: "좋아요 피드", rotate: "-1.3deg", depth: 17 },
   { href: "/ranking", label: "랭킹", rotate: "-0.8deg", depth: 12 },
-  { href: "/propose", label: "문장 제안하기", rotate: "1.6deg", depth: 22 },
+  { href: "/propose", label: "소재 제안하기", rotate: "1.6deg", depth: 22 },
   { href: "/board", label: "자유 게시판", rotate: "-1.4deg", depth: 16 },
   { href: "/commission", label: "의뢰소", rotate: "1.1deg", depth: 19 },
 ];
@@ -20,9 +21,14 @@ const MYPAGE_TAB: Tab = { href: "/mypage", label: "마이페이지", rotate: "-1
 export function PostitNav({ loggedIn }: { loggedIn: boolean }) {
   const pathname = usePathname();
 
-  // /board, /commission은 노트 밖의 게시판이라 페이지 인덱스 탭(포스트잇 형식) 대신
-  // 보드 상단의 "돌아가기" 버튼으로 이동한다.
-  if (pathname?.startsWith("/board") || pathname?.startsWith("/commission")) return null;
+  // /board, /commission, /feed는 노트 밖의 풀스크린 화면이라 페이지 인덱스 탭(포스트잇 형식)
+  // 대신 상단 로고(홈 링크)나 각 화면 자체의 "돌아가기" 버튼으로 이동한다.
+  if (
+    pathname?.startsWith("/board") ||
+    pathname?.startsWith("/commission") ||
+    pathname?.startsWith("/feed")
+  )
+    return null;
 
   const tabs = loggedIn ? [...TABS, MYPAGE_TAB] : TABS;
 
