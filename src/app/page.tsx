@@ -18,14 +18,14 @@ export default async function HomePage() {
       <div className="flex flex-col gap-8">
         <header className="flex flex-col gap-2">
           <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-            오늘의 상황 문장
+            오늘의 소재 단어
           </span>
           <h1 className="font-serif text-xl tracking-wide text-[var(--ink)] sm:text-2xl">
             오늘은 휴일입니다
           </h1>
         </header>
         <p className="font-serif text-base leading-relaxed text-[color-mix(in_srgb,var(--ink)_75%,transparent)]">
-          제안된 상황 문장이 없어 오늘은 쉬어갑니다. 내일 다시 만나요.
+          제안된 소재 단어가 없어 오늘은 쉬어갑니다. 내일 다시 만나요.
         </p>
       </div>
     );
@@ -40,42 +40,24 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   let myContent = "";
-  let myFinalizedAt: string | null = null;
-  let myEvaluation: {
-    passedGate: boolean | null;
-    gateIssue: string | null;
-    scores: { imagery: number; rhythm: number; resonance: number; density: number; context: number } | null;
-    note: string | null;
-  } | null = null;
   if (user) {
     const { data: submission } = await supabase
       .from("submissions")
-      .select(
-        "content, finalized_at, eval_passed_gate, eval_gate_issue, eval_scores, eval_note",
-      )
+      .select("content")
       .eq("daily_round_id", round.id)
       .eq("user_id", user.id)
       .maybeSingle();
     myContent = submission?.content ?? "";
-    myFinalizedAt = submission?.finalized_at ?? null;
-    if (myFinalizedAt) {
-      myEvaluation = {
-        passedGate: submission?.eval_passed_gate ?? null,
-        gateIssue: submission?.eval_gate_issue ?? null,
-        scores: submission?.eval_scores ?? null,
-        note: submission?.eval_note ?? null,
-      };
-    }
   }
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-          오늘의 상황 문장
+          오늘의 소재 단어
         </span>
         <h1 className="font-serif text-xl tracking-wide text-[var(--ink)] sm:text-2xl">
-          이 장면을, 당신의 문체로 다시 써보세요.
+          이 단어에서 떠오르는, 당신만의 아름다운 문장을 써보세요.
         </h1>
         <div className="mt-2 overflow-x-auto pb-1">
           <ManuscriptDisplay text={situation?.content ?? ""} columns={18} />
@@ -83,15 +65,10 @@ export default async function HomePage() {
       </header>
 
       {user ? (
-        <SubmissionForm
-          dailyRoundId={round.id}
-          initialContent={myContent}
-          finalizedAt={myFinalizedAt}
-          evaluation={myEvaluation}
-        />
+        <SubmissionForm dailyRoundId={round.id} initialContent={myContent} />
       ) : (
         <p className="font-serif text-base leading-relaxed text-[color-mix(in_srgb,var(--ink)_70%,transparent)]">
-          로그인하면 이 상황을 나만의 문체로 다시 써서 제출할 수 있어요.
+          로그인하면 이 소재로 나만의 문장을 써서 제출할 수 있어요.
         </p>
       )}
     </div>

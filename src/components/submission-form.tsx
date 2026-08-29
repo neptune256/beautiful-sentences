@@ -2,36 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
-import { saveSubmission, finalizeSubmission } from "@/app/actions/submissions";
+import { saveSubmission } from "@/app/actions/submissions";
 import { SubmissionSuccessModal } from "@/components/submission-success-modal";
 import { fireDiamondConfetti } from "@/components/quest-celebration";
-
-type CriterionScores = {
-  imagery: number;
-  rhythm: number;
-  resonance: number;
-  density: number;
-  context: number;
-};
-
-type Evaluation = {
-  passedGate: boolean | null;
-  gateIssue: string | null;
-  scores: CriterionScores | null;
-  note: string | null;
-};
-
-const CRITERION_LABELS: Record<keyof CriterionScores, string> = {
-  imagery: "선명도",
-  rhythm: "운율",
-  resonance: "잔향",
-  density: "함축성",
-  context: "맥락",
-};
-
-function totalScore(scores: CriterionScores) {
-  return Object.values(scores).reduce((sum, v) => sum + v, 0);
-}
 
 // 은은한 골드·브라운 톤 별가루가 화면 양쪽에서 부드럽게 퍼지는 정도로만 터뜨린다.
 function fireSuccessConfetti() {
@@ -67,17 +40,12 @@ function fireStreakConfetti() {
 export function SubmissionForm({
   dailyRoundId,
   initialContent,
-  finalizedAt,
-  evaluation,
 }: {
   dailyRoundId: string;
   initialContent: string;
-  finalizedAt: string | null;
-  evaluation: Evaluation | null;
 }) {
   const [content, setContent] = useState(initialContent);
   const [isPending, startTransition] = useTransition();
-  const [isFinalizing, startFinalizeTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -85,8 +53,6 @@ export function SubmissionForm({
   const [isMilestone, setIsMilestone] = useState(false);
   const [diamondsAwarded, setDiamondsAwarded] = useState(0);
   const [dailyQuestCompletedNow, setDailyQuestCompletedNow] = useState(false);
-  const [isFinalized, setIsFinalized] = useState(!!finalizedAt);
-  const [result, setResult] = useState<Evaluation | null>(evaluation);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 페이지를 넘기는 대신, 노트 페이지 전체가 그렇듯 글이 길어지면 입력창도 아래로 늘어나게 함.
@@ -129,73 +95,6 @@ export function SubmissionForm({
     });
   }
 
-  function handleFinalize() {
-    if (
-      !window.confirm(
-        "최종 제출하면 더 이상 수정할 수 없고, 지금 바로 채점을 받아요. 계속할까요?",
-      )
-    ) {
-      return;
-    }
-    setError(null);
-    startFinalizeTransition(async () => {
-      try {
-        const r = await finalizeSubmission(dailyRoundId, content);
-        setResult(r);
-        setIsFinalized(true);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "최종 제출에 실패했습니다.");
-      }
-    });
-  }
-
-  if (isFinalized) {
-    return (
-      <section className="flex flex-col gap-3">
-        <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-          나의 문장 · 최종 제출 완료
-        </span>
-        <div className="rounded-sm border border-[var(--paper-grid)] bg-white p-4 shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)]">
-          <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed text-[var(--ink)]">
-            {content}
-          </p>
-        </div>
-
-        {result && (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              {result.passedGate === false && (
-                <span className="rounded-full border border-[var(--stamp-red)] px-2 py-0.5 font-sans text-xs font-bold text-[var(--stamp-red)]">
-                  1단계 기준 미통과
-                </span>
-              )}
-              {result.scores && (
-                <span className="font-mono text-xs text-[color-mix(in_srgb,var(--ink)_60%,transparent)]">
-                  {(Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[])
-                    .map((key) => `${CRITERION_LABELS[key]} ${result.scores![key]}`)
-                    .join("  ·  ")}
-                  {"  ·  "}
-                  <span className="font-bold text-[var(--ink)]">
-                    총점 {totalScore(result.scores)}/50
-                  </span>
-                </span>
-              )}
-            </div>
-            {result.note && (
-              <p className="font-sans text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-                아쉬운 점: {result.note}
-              </p>
-            )}
-          </div>
-        )}
-
-        <p className="font-sans text-xs text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
-          자정에 다른 참가자들과 점수를 비교해 오늘의 1위가 정해져요.
-        </p>
-      </section>
-    );
-  }
-
   return (
     <section className="flex flex-col gap-3">
       <span className="font-sans text-xs font-bold tracking-[0.3em] text-[color-mix(in_srgb,var(--ink)_55%,transparent)]">
@@ -211,7 +110,7 @@ export function SubmissionForm({
         maxLength={2000}
         rows={6}
         aria-label="나의 문장 입력"
-        placeholder="이 상황을 나만의 문체로 다시 써보세요."
+        placeholder="이 단어에서 떠오르는 아름다운 문장을 써보세요."
         className="w-full resize-none rounded-sm border border-[var(--paper-grid)] bg-white p-4 font-serif text-sm leading-relaxed text-[var(--ink)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] outline-none transition-colors placeholder:font-sans placeholder:text-[color-mix(in_srgb,var(--ink)_40%,transparent)] focus:border-[var(--stamp-red)]"
       />
       <div className="flex items-center gap-4">
@@ -224,7 +123,7 @@ export function SubmissionForm({
         <button
           type="button"
           onClick={handleSave}
-          disabled={isPending || isFinalizing || content.trim().length === 0}
+          disabled={isPending || content.trim().length === 0}
           className="relative grid h-24 w-24 place-items-center rounded-full border-[3px] border-[var(--stamp-red)] font-serif text-lg font-bold text-[var(--stamp-red)] transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--stamp-red)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           <span className="leading-none">
@@ -233,20 +132,6 @@ export function SubmissionForm({
             <span className="text-sm">保存</span>
           </span>
           <span className="pointer-events-none absolute inset-1 rounded-full border border-dashed border-[var(--stamp-red)] opacity-60" />
-        </button>
-
-        <button
-          type="button"
-          onClick={handleFinalize}
-          disabled={isPending || isFinalizing || content.trim().length === 0}
-          className="relative grid h-24 w-24 place-items-center rounded-full border-[3px] border-[var(--wood-shadow)] font-serif text-lg font-bold text-[var(--wood-shadow)] transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--wood-shadow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper-cream)] disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          <span className="leading-none">
-            {isFinalizing ? "채점 중" : "최종 제출"}
-            <br />
-            <span className="text-sm">確定</span>
-          </span>
-          <span className="pointer-events-none absolute inset-1 rounded-full border border-dashed border-[var(--wood-shadow)] opacity-60" />
         </button>
 
         {savedAt && !error && (
