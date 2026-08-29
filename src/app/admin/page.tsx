@@ -20,32 +20,12 @@ import {
 const HISTORY_PAGE_SIZE = 3;
 
 const TABS = [
-  { key: "sentences", label: "문장 관리" },
+  { key: "sentences", label: "소재 관리" },
   { key: "credit", label: "Gemini 크레딧" },
   { key: "feedback", label: "피드백" },
   { key: "history", label: "과거 이력" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
-
-type CriterionScores = {
-  imagery: number;
-  rhythm: number;
-  resonance: number;
-  density: number;
-  context: number;
-};
-
-const CRITERION_LABELS: Record<keyof CriterionScores, string> = {
-  imagery: "선명도",
-  rhythm: "운율",
-  resonance: "잔향",
-  density: "함축성",
-  context: "맥락",
-};
-
-function totalScore(scores: CriterionScores) {
-  return Object.values(scores).reduce((sum, v) => sum + v, 0);
-}
 
 function singleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -162,9 +142,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     tab === "history"
       ? await admin
           .from("daily_rounds")
-          .select(
-            "id, round_date, situation_sentences(content), evaluations(reasoning, submissions(content, eval_scores, profiles(nickname)))",
-          )
+          .select("id, round_date, situation_sentences(content)")
           .eq("status", "closed")
           .order("round_date", { ascending: false })
           .range(historyFrom, historyTo)
@@ -177,19 +155,21 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         .select("id", { count: "exact", head: true })
         .eq("daily_round_id", r.id);
 
+      const { data: topSubmission } = await admin
+        .from("submissions")
+        .select("content, likes_count, profiles(nickname)")
+        .eq("daily_round_id", r.id)
+        .order("likes_count", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       const situationInfo = Array.isArray(r.situation_sentences)
         ? r.situation_sentences[0]
         : r.situation_sentences;
-      const evaluation = Array.isArray(r.evaluations) ? r.evaluations[0] : r.evaluations;
-      const winnerSubmission = evaluation
-        ? Array.isArray(evaluation.submissions)
-          ? evaluation.submissions[0]
-          : evaluation.submissions
-        : null;
-      const winnerProfile = winnerSubmission
-        ? Array.isArray(winnerSubmission.profiles)
-          ? winnerSubmission.profiles[0]
-          : winnerSubmission.profiles
+      const topProfile = topSubmission
+        ? Array.isArray(topSubmission.profiles)
+          ? topSubmission.profiles[0]
+          : topSubmission.profiles
         : null;
 
       return {
@@ -197,10 +177,9 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         roundDate: r.round_date,
         situationContent: situationInfo?.content ?? "",
         submissionCount: count ?? 0,
-        reasoning: evaluation?.reasoning ?? null,
-        winnerNickname: winnerProfile?.nickname ?? null,
-        winnerContent: winnerSubmission?.content ?? null,
-        winnerScores: (winnerSubmission?.eval_scores as CriterionScores | null) ?? null,
+        topNickname: topProfile?.nickname ?? null,
+        topContent: topSubmission?.content ?? null,
+        topLikes: topSubmission?.likes_count ?? 0,
       };
     }),
   );
@@ -298,7 +277,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                   <input
                     type="text"
                     name="content"
-                    placeholder="오늘의 상황 문장을 입력하세요"
+                    placeholder="오늘의 소재 단어를 입력하세요"
                     className="flex-1 rounded-md border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-black/30"
                   />
                   <button
@@ -467,7 +446,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               <input
                 type="text"
                 name="content"
-                placeholder="상황 문장을 입력하세요"
+                placeholder="소재 단어를 입력하세요"
                 className="flex-1 rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30"
               />
               <button
@@ -690,37 +669,21 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">
                     {h.situationContent}
                   </p>
-                  {h.winnerNickname ? (
+                  {h.topNickname ? (
                     <div className="rounded-md border border-black/10 bg-black/[0.02] p-3 text-xs">
-                      <p className="font-semibold">1위 · {h.winnerNickname}</p>
-                      {h.winnerContent && (
+                      <p className="font-semibold">
+                        ❤️ {h.topLikes} · {h.topNickname}
+                      </p>
+                      {h.topContent && (
                         <ExpandableText
-                          text={h.winnerContent}
+                          text={h.topContent}
                           clampLines={4}
                           className="mt-1 text-black/70"
-                        >
-                          {h.winnerScores && (
-                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-black/60">
-                              {(
-                                Object.keys(CRITERION_LABELS) as (keyof CriterionScores)[]
-                              ).map((key) => (
-                                <span key={key}>
-                                  {CRITERION_LABELS[key]} {h.winnerScores![key]}
-                                </span>
-                              ))}
-                              <span className="font-semibold text-black">
-                                총점 {totalScore(h.winnerScores)}/50
-                              </span>
-                            </div>
-                          )}
-                          {h.reasoning && <p className="mt-2 text-black/50">{h.reasoning}</p>}
-                        </ExpandableText>
+                        />
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-black/40">
-                      평가 결과가 없습니다 (참가자 없음 또는 평가 실패).
-                    </p>
+                    <p className="text-xs text-black/40">참가자가 없습니다.</p>
                   )}
                 </li>
               ))}
